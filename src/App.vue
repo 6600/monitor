@@ -1,14 +1,31 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
     <router-view/>
   </div>
 </template>
 
 <style lang="less">
+@font-face {
+  font-family: 'iconfont';  /* project id 952414 */
+  src: url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.eot');
+  src: url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.woff') format('woff'),
+  url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.svg#iconfont') format('svg');
+}
+.icon {
+  font-family: "iconfont";
+  font-style: normal;
+  font-weight: normal;
+  display: inline-block;
+  user-select: none;
+}
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
