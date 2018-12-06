@@ -11,14 +11,14 @@
         <div class="login">
           <div class="username">
             <span class="icon">&#xe600;</span>
-            <input type="text">
+            <input placeholder="请输入用户名" type="text">
           </div>
           <div class="password">
             <span class="icon">&#xe6e2;</span>
-            <input type="text">
+            <input placeholder="请输入密码" type="text">
           </div>
           <div class="save-user-name">
-            <CheckBox v-model="saveUserName" :size="12"/>
+            <CheckBox class="check" v-model="saveUserName" :size="12"/>
             <span>记住密码</span>
           </div>
           <WaterRipple class="login-button" @onClick="login" text="登陆"></WaterRipple>
@@ -48,6 +48,7 @@ export default {
   methods: {
     login () {
       console.log('点击了！')
+      this.$router.push('about')
     }
   }
 }
@@ -109,8 +110,10 @@ export default {
   margin: 40px 0;
   .form {
     margin: 4px;
+    padding-right: 2px;
   }
   span {
+    color: #999798;
     line-height: 26px;
   }
 }
@@ -122,6 +125,7 @@ export default {
     height: 40px;
     line-height: 40px;
     width: 40px;
+    color: #c3c1c1;
   }
   input {
     border: none;

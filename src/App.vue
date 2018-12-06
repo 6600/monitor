@@ -7,11 +7,11 @@
 <style lang="less">
 @font-face {
   font-family: 'iconfont';  /* project id 952414 */
-  src: url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.eot');
-  src: url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.eot?#iefix') format('embedded-opentype'),
-  url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.woff') format('woff'),
-  url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.ttf') format('truetype'),
-  url('//at.alicdn.com/t/font_952414_8hs4zqjva9s.svg#iconfont') format('svg');
+  src: url('//at.alicdn.com/t/font_952414_gl1557xnku5.eot');
+  src: url('//at.alicdn.com/t/font_952414_gl1557xnku5.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_952414_gl1557xnku5.woff') format('woff'),
+  url('//at.alicdn.com/t/font_952414_gl1557xnku5.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_952414_gl1557xnku5.svg#iconfont') format('svg');
 }
 .icon {
   font-family: "iconfont";
