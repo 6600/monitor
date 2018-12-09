@@ -10,11 +10,11 @@
 }
 @font-face {
   font-family: 'iconfont';  /* project id 952414 */
-  src: url('//at.alicdn.com/t/font_952414_lrs3zmo1uz.eot');
-  src: url('//at.alicdn.com/t/font_952414_lrs3zmo1uz.eot?#iefix') format('embedded-opentype'),
-  url('//at.alicdn.com/t/font_952414_lrs3zmo1uz.woff') format('woff'),
-  url('//at.alicdn.com/t/font_952414_lrs3zmo1uz.ttf') format('truetype'),
-  url('//at.alicdn.com/t/font_952414_lrs3zmo1uz.svg#iconfont') format('svg');
+  src: url('//at.alicdn.com/t/font_952414_r6l1q2vbhso.eot');
+  src: url('//at.alicdn.com/t/font_952414_r6l1q2vbhso.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_952414_r6l1q2vbhso.woff') format('woff'),
+  url('//at.alicdn.com/t/font_952414_r6l1q2vbhso.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_952414_r6l1q2vbhso.svg#iconfont') format('svg');
 }
 .icon {
   font-family: "iconfont";

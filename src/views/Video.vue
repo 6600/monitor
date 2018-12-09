@@ -17,11 +17,13 @@
       </ExpandList>
     </div>
     <div class="right">
+      <div class="split-box">
+        <div class="split-button" @click="changeVideoSplit(4)">4</div>
+        <div class="split-button" @click="changeVideoSplit(9)">9</div>
+        <div class="split-button" @click="changeVideoSplit(16)">16</div>
+      </div>
       <div class="content">
-        <VideoBox class="video-box"></VideoBox>
-        <VideoBox class="video-box"></VideoBox>
-        <VideoBox class="video-box"></VideoBox>
-        <VideoBox class="video-box"></VideoBox>
+        <VideoBox v-for="(item, index) in videoList" class="video-box" :style="getVideoBox()" :title="item.title" :key="index"></VideoBox>
       </div>
     </div>
   </div>
@@ -35,6 +37,32 @@ export default {
   components: {
     VideoBox,
     ExpandList
+  },
+  data () {
+    return {
+      videoList: [
+        {title: "视频1"},
+        {title: "视频2"},
+        {title: "视频3"},
+        {title: "视频4"},
+      ]
+    }
+  },
+  methods: {
+    getVideoBox () {
+      return {
+        width: `${100/Math.sqrt(this.videoList.length)}%`,
+        height: `${100/Math.sqrt(this.videoList.length)}%`
+      }
+    },
+    changeVideoSplit (number) {
+      let newList = []
+      for (let index = 0; index < number ; index++) {
+        newList.push({title: `视频${index}`})
+      }
+      console.log(newList)
+      this.videoList = newList
+    }
   }
 }
 </script>
@@ -92,6 +120,10 @@ export default {
   width: 50%;
   height: 50%;
   float: left;
+}
+.split-box {
+  display: flex;
+  position: absolute;
 }
 </style>
 
