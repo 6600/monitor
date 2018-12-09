@@ -18,9 +18,9 @@
     </div>
     <div class="right">
       <div class="split-box">
-        <div class="split-button" @click="changeVideoSplit(4)">4</div>
-        <div class="split-button" @click="changeVideoSplit(9)">9</div>
-        <div class="split-button" @click="changeVideoSplit(16)">16</div>
+        <div class="split-button icon" @click="changeVideoSplit(4)">&#xe6f8;</div>
+        <div class="split-button icon" @click="changeVideoSplit(9)">&#xe708;</div>
+        <div class="split-button icon" @click="changeVideoSplit(16)">&#xe709;</div>
       </div>
       <div class="content">
         <VideoBox v-for="(item, index) in videoList" class="video-box" :style="getVideoBox()" :title="item.title" :key="index"></VideoBox>
@@ -108,12 +108,13 @@ export default {
 }
 .content {
   margin: 20px;
-  margin-top: 60px;
+  margin-top: 50px;
   padding: 10px;
   background-color: white;
-  height: calc(100% - 100px);
+  height: calc(100% - 90px);
 }
 .right {
+  position: relative;
   width: calc(100% - 260px);
 }
 .video-box {
@@ -124,6 +125,13 @@ export default {
 .split-box {
   display: flex;
   position: absolute;
+  font-size: 30px;
+  right: 10px;
+  top: 10px;
+  .icon {
+    cursor: pointer;
+    color: lightslategray;
+  }
 }
 </style>
 
