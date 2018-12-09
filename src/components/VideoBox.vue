@@ -1,10 +1,19 @@
 <template>
   <div class="video" :class="{'is-enlarge': isEnlarge}">
-    <div class="title">
+    <div class="title" v-show="title">
       <div class="text">{{title}}</div>
-      <div class="icon enlarge" @click="isEnlarge = !isEnlarge">&#xe963;</div>
+      <div class="tool">
+        <div class="icon enlarge" @click="isEnlarge = !isEnlarge">&#xe963;</div>
+        <div class="icon delete" @click='$emit("delete")'>&#xe647;</div>
+      </div>
     </div>
     <div class="screen"></div>
+    <div class="control" v-show="title">
+      <div class="up icon">&#xe684;</div>
+      <div class="down icon">&#xe629;</div>
+      <div class="left icon">&#xe62f;</div>
+      <div class="right icon">&#xe62e;</div>
+    </div>
   </div>
 </template>
 
@@ -54,6 +63,9 @@ export default {
     width: 25px;
     cursor: pointer;
   }
+  .tool {
+    display: flex;
+  }
 }
 .video.is-enlarge {
   position: fixed;
@@ -66,6 +78,23 @@ export default {
     margin: 0;
     width: 100%;
     height: 100%;
+  }
+}
+.control {
+  position: absolute;
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  bottom: 5px;
+  right: 5px;
+  font-size: 20px;
+  .icon {
+    width: 25px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .icon:hover {
+    background-color: gray;
   }
 }
 </style>

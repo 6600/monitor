@@ -23,7 +23,7 @@
         <div class="split-button icon" @click="changeVideoSplit(16)">&#xe709;</div>
       </div>
       <div class="content">
-        <VideoBox v-for="(item, index) in videoList" class="video-box" :style="getVideoBox()" :title="item.title" :key="index"></VideoBox>
+        <VideoBox v-for="(item, index) in videoList" class="video-box" :style="getVideoBox()" :title="item.title" @delete="deleteVideo(index)" :key="index"></VideoBox>
       </div>
     </div>
   </div>
@@ -62,6 +62,13 @@ export default {
       }
       console.log(newList)
       this.videoList = newList
+    },
+    deleteVideo (index) {
+      let copyData = this.videoList
+      copyData[index] = {}
+      console.log(index)
+      this.videoList = []
+      this.videoList = copyData
     }
   }
 }
