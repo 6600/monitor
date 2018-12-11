@@ -18,19 +18,21 @@
           <div class="delete-user button">删除用户</div>
         </div>
         <div class="table-box">
-          <table border="0">
+          <table border="0" cellspacing=0>
             <tr>
-              <th class="check-th"></th>
-              <th>编号</th>
+              <th class="check-th"><CheckBox class="check" borderColor="#a3a4a6" v-model="isCheckAll" :size="12"></CheckBox></th>
+              <th class="number-th">编号</th>
               <th>用户名称</th>
-              <th>用户状态</th>
+              <th>设备ip</th>
+              <th>最后登录时间</th>
             </tr>
             <tr v-for="(item, ind) in tableData" :key="ind">
-              <td>
-                <CheckBox class="check" v-model="item.isCheck" :size="12"></CheckBox>
+              <td class="check-td">
+                <CheckBox class="check" v-model="item.isCheck" borderColor="#a3a4a6" :size="12"></CheckBox>
               </td>
               <td>{{item.id}}</td>
               <td>{{item.name}}</td>
+              <td>{{item.state}}</td>
               <td>{{item.state}}</td>
             </tr>
           </table>
@@ -80,7 +82,8 @@ export default {
         { isCheck: false, id: 1, name: "测试", state: "在线" },
         { isCheck: false, id: 1, name: "测试", state: "在线" },
         { isCheck: false, id: 1, name: "测试", state: "在线" }
-      ]
+      ],
+      isCheckAll: false
     }
   },
   methods: {
@@ -177,13 +180,20 @@ table {
     font-size: 12px;
     background-color: #e4e9ec;
   }
+  td {
+    border-bottom: 1px solid #e5e9ea;
+    border-right: 1px solid #e5e9ea;
+  }
+  .check-td {
+    border-left: 1px solid #e5e9ea;
+  }
   .table-box {
     height: calc(100% - 95px)
   }
   tr:nth-child(even){
     background-color: white;
   }
-  .check-th {
+  .check-th, .number-th {
     width: 45px;
   }
 }

@@ -48,6 +48,7 @@ export default {
   font-weight: normal;
   display: inline-block;
   user-select: none;
+  cursor: pointer;
 }
 html, body, #app {
   width: 100%;
