@@ -82,4 +82,14 @@ html, body, #app {
 .is-shrink .view .right {
   width: 100%;
 }
+
+// 收缩兰样式
+.left .expand-list-box .list {
+  color: white;
+  background-color: #21212d;
+  border-bottom: 1px solid #282834;
+}
+.left .expand-list-box .list svg {
+  fill: white;
+}
 </style>
