@@ -1,8 +1,9 @@
 <template>
-  <div class="main-page">
+  <div class="main-page" :class="{'is-shrink': isShrink}">
     <div class="title-bar">
       <div class="left">
         <div class="title">某某某安防管理系统</div>
+        <div class="shrink icon" @click="isShrink = !isShrink">&#xe604;</div>
         <router-link tag="div" to="video" class="menu-item">
           <div class="icon">&#xe601;</div>
           <div class="text">视频显示</div>
@@ -33,7 +34,7 @@
         </div>
       </div>
     </div>
-    <router-view/>
+    <router-view class="view"/>
   </div>
 </template>
 
@@ -42,7 +43,8 @@ export default {
   name: 'about',
   data () {
     return {
-      showMenu: false
+      showMenu: false,
+      isShrink: false
     }
   }
 }
@@ -69,7 +71,7 @@ export default {
   z-index: 9;
   justify-content: space-between;
   background-color: white;
-  box-shadow: 0px 4px 8px 0px #e0e1e2;
+  box-shadow: 0px 4px 8px 0px #ccced0;
 }
 .router-link-exact-active {
   background-color: #e4f5fd;
@@ -99,6 +101,7 @@ export default {
     cursor: pointer;
     .icon {
       width: 30px;
+      margin: 0 10px;
       text-align: center;
       font-size: 1.4rem;
     }
@@ -136,5 +139,9 @@ export default {
   .menu-item-text {
     font-size: 14px;
   }
+}
+.shrink {
+  width: 51px;
+  font-size: 23px;
 }
 </style>

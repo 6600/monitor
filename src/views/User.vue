@@ -35,7 +35,14 @@
             </tr>
           </table>
         </div>
-        <Paging class="page-box" :page-index="1" :total="100" :page-size="20" @change="pageChange"></Paging>
+        <div class="page-box">
+          <div class="page-box-left">
+            共13条,每页
+            <input type="text" value="10"/>
+            条
+          </div>
+          <Paging class="page-box-right" :page-index="1" :total="100" :page-size="20" @change="pageChange"></Paging>
+        </div>
       </div>
     </div>
   </div>
@@ -178,6 +185,19 @@ table {
   }
   .check-th {
     width: 45px;
+  }
+}
+.page-box {
+  display: flex;
+  justify-content: space-between;
+  .page-box-left {
+    color: #596174;
+    input {
+      width: 30px;
+      text-align: center;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
   }
 }
 </style>

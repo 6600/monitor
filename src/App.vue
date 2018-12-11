@@ -4,17 +4,43 @@
   </div>
 </template>
 
+<script>
+import { Order, websocket } from '@/Order.js'
+
+export default {
+  created () {
+
+    websocket.onopen = () => {
+      console.log("打开!")
+      // onOpen(evt)
+    }
+    // websocket.onclose = function(evt) { 
+    //   onClose(evt) 
+    // }
+    websocket.onmessage = (evt) => {
+      const data = JSON.parse(evt.data)
+      console.log('收到消息:', data)
+      Order.$emit(`message-${data.type}`, data)
+    }
+    // websocket.onerror = function(evt) { 
+    //   onError(evt) 
+    // }
+  }
+}
+</script>
+
+
 <style lang="less">
 .login-page {
   background-image: url("./assets/login_bk.png")
 }
 @font-face {
   font-family: 'iconfont';  /* project id 952414 */
-  src: url('//at.alicdn.com/t/font_952414_41f2ni9f3wv.eot');
-  src: url('//at.alicdn.com/t/font_952414_41f2ni9f3wv.eot?#iefix') format('embedded-opentype'),
-  url('//at.alicdn.com/t/font_952414_41f2ni9f3wv.woff') format('woff'),
-  url('//at.alicdn.com/t/font_952414_41f2ni9f3wv.ttf') format('truetype'),
-  url('//at.alicdn.com/t/font_952414_41f2ni9f3wv.svg#iconfont') format('svg');
+  src: url('//at.alicdn.com/t/font_952414_67u9cfnbw8i.eot');
+  src: url('//at.alicdn.com/t/font_952414_67u9cfnbw8i.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_952414_67u9cfnbw8i.woff') format('woff'),
+  url('//at.alicdn.com/t/font_952414_67u9cfnbw8i.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_952414_67u9cfnbw8i.svg#iconfont') format('svg');
 }
 .icon {
   font-family: "iconfont";
@@ -45,5 +71,14 @@ html, body, #app {
       color: #42b983;
     }
   }
+}
+.view .left, .view .right {
+  transition: width 0.5s;
+}
+.is-shrink .view .left {
+  width: 0;
+}
+.is-shrink .view .right {
+  width: 100%;
 }
 </style>

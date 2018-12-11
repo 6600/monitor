@@ -1,18 +1,10 @@
 <template>
   <div class="video-page">
     <div class="left">
-      <ExpandList title="陕西省咸阳市">
-        <div class="video-item">
+      <ExpandList v-for="(item, index) in subList" :title="index + ''" :key="index">
+        <div class="video-item" v-for="video in item" :key="video.device_id" @click="addVideo(video, index)">
           <div class="icon">&#xe68f;</div>
-          <div class="text">工厂1</div>
-        </div>
-        <div class="video-item">
-          <div class="icon">&#xe68f;</div>
-          <div class="text">工厂2</div>
-        </div>
-        <div class="video-item">
-          <div class="icon">&#xe68f;</div>
-          <div class="text">工厂3</div>
+          <div class="text">{{video.device_name}}</div>
         </div>
       </ExpandList>
     </div>
@@ -32,6 +24,8 @@
 <script>
 import ExpandList from '../components/ExpandList'
 import VideoBox from '../components/VideoBox'
+import { Order, websocket } from '@/Order.js'
+
 export default {
   name: 'about',
   components: {
@@ -40,12 +34,28 @@ export default {
   },
   data () {
     return {
+      subList: {},
       videoList: [
         {title: "视频1"},
         {title: "视频2"},
         {title: "视频3"},
         {title: "视频4"},
-      ]
+      ],
+      connection: null,
+      createPeer_type: 150,
+      client_status: 0,
+      ICEConfiguration: {
+        iceServers: [
+          {
+            urls: "turn:rtcmediaserver.top:3478",
+            username: "ipctest", 
+            credential: "ipctest"
+          }
+        ]
+      },
+      device_id: null,
+      peer_id: null,
+      sub_servers: null
     }
   },
   methods: {
@@ -69,7 +79,188 @@ export default {
       console.log(index)
       this.videoList = []
       this.videoList = copyData
+    },
+    randomNum (n) { 
+      var t=''; 
+      for (var i=0;i<n;i++) { 
+        t += Math.floor(Math.random()*10); 
+      } 
+      return t.replace(/\b(0+)/gi,""); 
+    },
+    addNewVideoElement() {
+      var video = document.createElement('video');
+      video.autoplay = true;
+      
+      document.appendChild(video);
+      
+      //var text = document.createTextNode(text_info);
+        //video_view.appendChild(text);
+        
+      return video
+    },
+    createPeer (peer_id, device_id) {
+      this.device_id = device_id;
+
+      console.log('createPeer: add stream peer\n');
+      this.createPeerInternal();
+    },
+    createPeerInternal () {
+      console.log('createPeerInternal\n');
+      if (this.connection == null) {
+        this.connection = new RTCPeerConnection(this.ICEConfiguration);
+      }
+
+      this.connection.onaddstream = (e) => {
+        var view = this.addNewVideoElement(e.stream.id);
+        view.srcObject = e.stream;
+        this.view_map.set(e.stream.id, view);
+
+        console.log('onaddstream stream id:' + e.stream.id + '\n');
+      };
+
+      this.connection.onremovestream = (e) => {
+        console.log('onremovestream stream id: ' + e.stream.id);
+        if (this.view_map.has(e.stream.id)) {
+          document.removeChild(this.view_map.get(e.stream.id));
+          this.view_map.delete(e.stream.id);
+          console.log('onremovestream stream id: ' + e.stream.id + ' removed');
+        }
+      };
+
+      this.connection.onicecandidate = (event) => {
+        this.onIceCandidate(this.connection, event);
+      };
+
+      this.connection.onicegatheringstatechange = () => {
+        this.onIceGatheringStateChange(this.connection);
+      };
+
+      this.connection.oniceconnectionstatechange = () => {
+        this.onIceConnectionStateChange(this.connection);
+      };
+
+      console.log('createOffer\n');
+      var onSuccess = this.onSuccess.bind(this);
+      this.connection.createOffer({
+          offerToReceiveAudio: 1,
+          offerToReceiveVideo: 1
+        })
+        .then(onSuccess, this.logError);
+    },
+    setRemoteSDP (sdp) {
+      var desc = new Object();
+      desc.type = 'answer';
+      desc.sdp = sdp;
+      this.connection.setRemoteDescription(desc);
+    },
+    onSuccess (desc) {
+      console.log('onSuccess sdp:' + desc.sdp.length);
+      this.connection.setLocalDescription(desc);
+      this.sdp = desc.sdp;
+
+      if (this.client_status == 1) {
+        var peerObj = new Object();
+        peerObj.peer_id = parseInt(this.peer_id);
+        peerObj.remote_peer_id = parseInt(this.sub_servers);
+        peerObj.device_id = this.device_id;
+        peerObj.type = this.createPeer_type;
+        peerObj.sdp = this.sdp;
+        var peerJson = JSON.stringify(peerObj);
+        websocket.send(peerJson);
+      }
+      this.client_status = 1; // connected
+    },
+    onIceCandidate (event) {
+      if (event.candidate) {
+        if (event.candidate.sdpMid == "audio") {
+          let begin = this.sdp.indexOf("m=audio");
+          if (begin > 0) {
+            let end = this.sdp.indexOf("\r\n", begin);
+            let subStr = this.sdp.substr(begin, end - begin);
+            this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
+          }
+        }
+        if (event.candidate.sdpMid == "video") {
+          let begin = this.sdp.indexOf("m=video");
+          if (begin > 0) {
+            let end = this.sdp.indexOf("\r\n", begin);
+            let subStr = this.sdp.substr(begin, end - begin);
+            this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
+          }
+        }
+      }
+    },
+    onIceGatheringStateChange () {
+      console.log('onIceGatheringStateChange:' + this.connection.iceGatheringState);
+      if (this.connection.iceGatheringState == "complete") {
+        console.log('onIceGatheringStateChange: complete\n' + this.sdp.length);
+
+        var peerObj = new Object();
+        peerObj.peer_id = parseInt(this.peer_id);
+        peerObj.remote_peer_id = parseInt(this.sub_servers);
+        peerObj.device_id = this.device_id
+        peerObj.type = this.createPeer_type;
+        peerObj.sdp = this.sdp;
+        var peerJson = JSON.stringify(peerObj);
+        console.log(peerJson)
+        websocket.send(peerJson);
+        console.log(this.connection)
+      }
+    },
+    onIceConnectionStateChange () {
+      if (this.connection.iceConnectionState == "completed") {
+        console.log("ok")
+      }
+    },
+    logError (err) {
+      console.err(err)
+    },
+    addVideo (videoInfo, subInfo) {
+      console.log(videoInfo)
+      this.sub_servers = subInfo
+      this.createPeer_type = 150;
+      this.createPeer(subInfo, videoInfo.device_id)
     }
+  },
+  created () {
+    let index = 0
+    let copySubList = {}
+    // 监听列表项目消息
+    Order.$on(`message-104`, (data) => {
+      index--
+      copySubList[data.peer_id] = data.devices_info
+      if (index === 0) {
+        this.subList = copySubList
+      }
+    })
+    // 监听列表消息
+    Order.$on(`message-10`, (data) => {
+      data.sub_servers.forEach(element => {
+        copySubList[element + ""] = []
+        var peerObj = new Object();
+        peerObj.peer_id = parseInt(data.peer_id);
+        peerObj.remote_peer_id = parseInt(element);
+        peerObj.type = 104;
+        var peerJson = JSON.stringify(peerObj)
+        // console.log(copySubList)
+        index ++
+        websocket.send(peerJson)
+      })
+      // this.subList = data.sub_servers
+      // console.log(newVideoList)
+    })
+  },
+  mounted () {
+    // 获取区域列表
+    this.peer_id = this.randomNum(6);
+	
+    var peerObj = new Object();
+    peerObj.peer_id = parseInt(this.peer_id);
+    peerObj.role = 21;
+    peerObj.type = 10;
+    var peerJson = JSON.stringify(peerObj); 
+    websocket.send(peerJson);
+
   }
 }
 </script>
