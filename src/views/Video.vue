@@ -26,6 +26,31 @@ import ExpandList from '../components/ExpandList'
 import VideoBox from '../components/VideoBox'
 import { Order, websocket } from '@/Order.js'
 
+/* eslint-disable */
+var ICEConfiguration = { iceServers: 
+					 [{
+                          urls: "turn:rtcmediaserver.top:3478",
+                          username: "ipctest", 
+                          credential: "ipctest"
+                      }]};
+
+function logError(err) {
+	console.err(err);
+}
+
+function addNewVideoElement() {
+  var video = document.createElement('video');
+  video.autoplay = true;
+  var video_view = document.getElementById("app")
+  console.log(video_view)
+  video_view.appendChild(video);
+  
+  //var text = document.createTextNode(text_info);
+    //video_view.appendChild(text);
+    
+  return video
+}
+
 export default {
   name: 'about',
   components: {
@@ -55,7 +80,8 @@ export default {
       },
       device_id: null,
       peer_id: null,
-      sub_servers: null
+      sub_servers: null,
+      peerconnection_map: new Map()
     }
   },
   methods: {
@@ -87,22 +113,18 @@ export default {
       } 
       return t.replace(/\b(0+)/gi,""); 
     },
-    addNewVideoElement() {
-      var video = document.createElement('video');
-      video.autoplay = true;
-      
-      document.appendChild(video);
-      
-      //var text = document.createTextNode(text_info);
-        //video_view.appendChild(text);
-        
-      return video
-    },
     createPeer (peer_id, device_id) {
-      this.device_id = device_id;
-
-      console.log('createPeer: add stream peer\n');
-      this.createPeerInternal();
+      peer_id = parseInt(peer_id)
+      this.device_id = device_id
+      if(this.peerconnection_map.has(peer_id)){
+        this.peerconnection_map.get(peer_id).createPeer(peer_id, device_id);
+      }
+      else{
+        var peer_con = new this.PeerConnection(this);
+        peer_con.createPeer(peer_id, device_id);
+        console.log(peer_id)
+        this.peerconnection_map.set(peer_id, peer_con);
+      }
     },
     createPeerInternal () {
       console.log('createPeerInternal\n');
@@ -111,7 +133,7 @@ export default {
       }
 
       this.connection.onaddstream = (e) => {
-        var view = this.addNewVideoElement(e.stream.id);
+        var view = addNewVideoElement(e.stream.id);
         view.srcObject = e.stream;
         this.view_map.set(e.stream.id, view);
 
@@ -147,11 +169,21 @@ export default {
         })
         .then(onSuccess, this.logError);
     },
-    setRemoteSDP (sdp) {
+    setRemoteSDPLest (sdp) {
       var desc = new Object();
       desc.type = 'answer';
       desc.sdp = sdp;
+      console.log(desc)
       this.connection.setRemoteDescription(desc);
+    },
+    setRemoteSDP (peerId, sdp) {
+      console.log('setRemoteSDP: remote sdp id:' + peerId + "sdp:" + sdp.length);
+      if (this.peerconnection_map.has(parseInt(peerId))) {
+        this.peerconnection_map.get(parseInt(peerId)).setRemoteSDP(sdp);
+      }
+      else {
+        console.log('setRemoteSDP failed, no user:' + peerId + ", peer map size:" + this.peerconnection_map.size);
+      }
     },
     onSuccess (desc) {
       console.log('onSuccess sdp:' + desc.sdp.length);
@@ -166,6 +198,7 @@ export default {
         peerObj.type = this.createPeer_type;
         peerObj.sdp = this.sdp;
         var peerJson = JSON.stringify(peerObj);
+        console.log(peerObj)
         websocket.send(peerJson);
       }
       this.client_status = 1; // connected
@@ -197,12 +230,12 @@ export default {
 
         var peerObj = new Object();
         peerObj.peer_id = parseInt(this.peer_id);
-        peerObj.remote_peer_id = parseInt(this.sub_servers);
+        peerObj.remote_peer_id = this.sub_servers;
         peerObj.device_id = this.device_id
         peerObj.type = this.createPeer_type;
         peerObj.sdp = this.sdp;
         var peerJson = JSON.stringify(peerObj);
-        console.log(peerJson)
+        console.log(peerObj)
         websocket.send(peerJson);
         console.log(this.connection)
       }
@@ -216,10 +249,169 @@ export default {
       console.err(err)
     },
     addVideo (videoInfo, subInfo) {
-      console.log(videoInfo)
-      this.sub_servers = subInfo
+      // console.log(videoInfo)
+      // this.sub_servers = subInfo
+      // this.initSubServer()
       this.createPeer_type = 150;
       this.createPeer(subInfo, videoInfo.device_id)
+    },
+    initSubServer (peer_id) {
+      console.log('发送140 和 104')
+      console.log('Init sub server');
+      var peerObj = new Object();
+      peerObj.peer_id = parseInt(peer_id);
+      peerObj.remote_peer_id = parseInt(this.sub_servers);
+      peerObj.type = 140;
+      var peerJson = JSON.stringify(peerObj);
+      console.log('发送140')
+      console.log(peerObj)
+      websocket.send(peerJson);
+      
+      
+      var ptzObj = new Object();
+      ptzObj.peer_id = parseInt(peer_id);
+      ptzObj.remote_peer_id = parseInt(this.sub_servers);
+      ptzObj.type = 100;
+      console.log('发送100')
+      console.log(ptzObj)
+      var ptzCreate = JSON.stringify(ptzObj); 
+      websocket.send(ptzCreate);
+    },
+    PeerConnection(vueData) {
+      this.device_id = null;
+      this.sdp = null;
+      
+      this.view_map = new Map();
+      
+      //this.view = addNewVideoElement("local");
+      
+      this.connection = null;
+      
+      this.createPeer = function(peer_id, device_id) {
+        this.device_id = device_id;
+
+        console.log('createPeer: add stream peer\n');
+        this.createPeerInternal();
+      };
+      
+      this.createPeerInternal = function() {
+        console.log('createPeerInternal\n');
+        if(this.connection == null){
+          this.connection = new RTCPeerConnection(ICEConfiguration);
+        }
+        
+        this.connection.onaddstream = (e) => {
+          var view = addNewVideoElement(e.stream.id);
+          view.srcObject = e.stream;
+          this.view_map.set(e.stream.id, view);
+          
+          console.log('onaddstream stream id:' + e.stream.id + '\n' );
+        };
+        
+        this.connection.onremovestream = (e) => {
+          console.log('onremovestream stream id: ' + e.stream.id );
+          if(this.view_map.has(e.stream.id))
+          {
+            video_view.removeChild(this.view_map.get(e.stream.id));
+            this.view_map.delete(e.stream.id);
+            console.log('onremovestream stream id: ' + e.stream.id + ' removed');
+          }
+        };
+        
+        this.connection.onicecandidate = (event) => {
+            this.onIceCandidate(this.connection, event);
+          };
+          
+          this.connection.onicegatheringstatechange = () => {
+            this.onIceGatheringStateChange(this.connection);
+          };
+          
+          this.connection.oniceconnectionstatechange = () => {
+            this.onIceConnectionStateChange(this.connection);
+          };
+          
+        console.log('createOffer\n');
+          var onSuccess = this.onSuccess.bind(this);
+        this.connection.createOffer({
+            offerToReceiveAudio: 1,
+            offerToReceiveVideo: 1
+          })
+          .then(onSuccess, logError);
+      };
+      
+      this.setRemoteSDP = function(sdp) {
+      
+        var desc = new Object(); 
+        desc.type = 'answer';
+        desc.sdp = sdp;
+        this.connection.setRemoteDescription(desc);
+      };
+      
+      this.onSuccess = function(desc) {
+        console.log('onSuccess sdp:' + desc.sdp.length);
+        this.connection.setLocalDescription(desc);
+        this.sdp = desc.sdp;
+        
+        if(this.client_status == 1)
+        {
+          var peerObj = new Object();
+          peerObj.peer_id = parseInt(peer_id);
+          peerObj.remote_peer_id = parseInt(this.sub_servers);
+          peerObj.device_id = device_id;
+          peerObj.type = this.createPeer_type;
+          peerObj.sdp = this.sdp;
+          var peerJson = JSON.stringify(peerObj); 
+          websocket.send(peerJson);
+        }
+        this.client_status = 1;// connected
+      };
+
+      this.onIceCandidate = function(connection, event) {
+        //console.log('onIceCandidate:\n' , event.candidate);
+        if (event.candidate) {
+          if(event.candidate.sdpMid == "audio") {
+            var begin = this.sdp.indexOf("m=audio");
+            if(begin > 0) {
+              var end = this.sdp.indexOf("\r\n", begin);
+              var subStr = this.sdp.substr(begin, end - begin);
+              this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
+            }
+          }
+          if(event.candidate.sdpMid == "video") {
+            var begin = this.sdp.indexOf("m=video");
+            if(begin > 0) {
+              var end = this.sdp.indexOf("\r\n", begin);
+              var subStr = this.sdp.substr(begin, end - begin);
+              this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
+            }
+          }
+        }
+      };
+      
+      this.onIceGatheringStateChange= (connection) => {
+        console.log('onIceGatheringStateChange:' + connection.iceGatheringState);
+        if (connection.iceGatheringState == "complete") {
+          console.log('onIceGatheringStateChange: complete\n' + this.sdp.length);
+          
+          var peerObj = new Object();
+          peerObj.peer_id =  parseInt(vueData.peer_id);
+          peerObj.remote_peer_id = vueData.sub_servers
+          peerObj.device_id = vueData.device_id;
+          peerObj.type = vueData.createPeer_type;
+          peerObj.sdp = this.sdp;
+          console.log(vueData)
+          console.log(peerObj)
+          var peerJson = JSON.stringify(peerObj); 
+          websocket.send(peerJson);
+        }
+      };
+      
+      this.onIceConnectionStateChange = function(connection) {
+        console.log('onIceConnectionStateChange: \n' + connection.iceConnectionState);
+        
+        if(connection.iceConnectionState == "completed"){
+        }
+      }
     }
   },
   created () {
@@ -236,6 +428,8 @@ export default {
     // 监听列表消息
     Order.$on(`message-10`, (data) => {
       data.sub_servers.forEach(element => {
+        // 注册remote----
+        this.sub_servers = parseInt(element)
         copySubList[element + ""] = []
         var peerObj = new Object();
         peerObj.peer_id = parseInt(data.peer_id);
@@ -244,10 +438,19 @@ export default {
         var peerJson = JSON.stringify(peerObj)
         // console.log(copySubList)
         index ++
+        console.log('发送')
+        console.log(peerObj)
         websocket.send(peerJson)
+        this.initSubServer(this.peer_id)
       })
+      
       // this.subList = data.sub_servers
       // console.log(newVideoList)
+    })
+
+    Order.$on(`message-150`, (data) => {
+      console.log('150消息:', data)
+      this.setRemoteSDP(data.peer_id, data.sdp)
     })
   },
   mounted () {
@@ -258,9 +461,10 @@ export default {
     peerObj.peer_id = parseInt(this.peer_id);
     peerObj.role = 21;
     peerObj.type = 10;
+    console.log(peerObj)
     var peerJson = JSON.stringify(peerObj); 
     websocket.send(peerJson);
-
+    
   }
 }
 </script>
