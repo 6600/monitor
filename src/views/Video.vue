@@ -27,12 +27,13 @@ import VideoBox from '../components/VideoBox'
 import { Order, websocket } from '@/Order.js'
 
 /* eslint-disable */
-var ICEConfiguration = { iceServers: 
-					 [{
-                          urls: "turn:rtcmediaserver.top:3478",
-                          username: "ipctest", 
-                          credential: "ipctest"
-                      }]};
+var ICEConfiguration = {
+  iceServers: [{
+    urls: "turn:rtcmediaserver.top:3478",
+    username: "ipctest", 
+    credential: "ipctest"
+  }]
+};
 
 function logError(err) {
 	console.err(err);
@@ -126,49 +127,6 @@ export default {
         this.peerconnection_map.set(peer_id, peer_con);
       }
     },
-    createPeerInternal () {
-      console.log('createPeerInternal\n');
-      if (this.connection == null) {
-        this.connection = new RTCPeerConnection(this.ICEConfiguration);
-      }
-
-      this.connection.onaddstream = (e) => {
-        var view = addNewVideoElement(e.stream.id);
-        view.srcObject = e.stream;
-        this.view_map.set(e.stream.id, view);
-
-        console.log('onaddstream stream id:' + e.stream.id + '\n');
-      };
-
-      this.connection.onremovestream = (e) => {
-        console.log('onremovestream stream id: ' + e.stream.id);
-        if (this.view_map.has(e.stream.id)) {
-          document.removeChild(this.view_map.get(e.stream.id));
-          this.view_map.delete(e.stream.id);
-          console.log('onremovestream stream id: ' + e.stream.id + ' removed');
-        }
-      };
-
-      this.connection.onicecandidate = (event) => {
-        this.onIceCandidate(this.connection, event);
-      };
-
-      this.connection.onicegatheringstatechange = () => {
-        this.onIceGatheringStateChange(this.connection);
-      };
-
-      this.connection.oniceconnectionstatechange = () => {
-        this.onIceConnectionStateChange(this.connection);
-      };
-
-      console.log('createOffer\n');
-      var onSuccess = this.onSuccess.bind(this);
-      this.connection.createOffer({
-          offerToReceiveAudio: 1,
-          offerToReceiveVideo: 1
-        })
-        .then(onSuccess, this.logError);
-    },
     setRemoteSDPLest (sdp) {
       var desc = new Object();
       desc.type = 'answer';
@@ -183,66 +141,6 @@ export default {
       }
       else {
         console.log('setRemoteSDP failed, no user:' + peerId + ", peer map size:" + this.peerconnection_map.size);
-      }
-    },
-    onSuccess (desc) {
-      console.log('onSuccess sdp:' + desc.sdp.length);
-      this.connection.setLocalDescription(desc);
-      this.sdp = desc.sdp;
-
-      if (this.client_status == 1) {
-        var peerObj = new Object();
-        peerObj.peer_id = parseInt(this.peer_id);
-        peerObj.remote_peer_id = parseInt(this.sub_servers);
-        peerObj.device_id = this.device_id;
-        peerObj.type = this.createPeer_type;
-        peerObj.sdp = this.sdp;
-        var peerJson = JSON.stringify(peerObj);
-        console.log(peerObj)
-        websocket.send(peerJson);
-      }
-      this.client_status = 1; // connected
-    },
-    onIceCandidate (event) {
-      if (event.candidate) {
-        if (event.candidate.sdpMid == "audio") {
-          let begin = this.sdp.indexOf("m=audio");
-          if (begin > 0) {
-            let end = this.sdp.indexOf("\r\n", begin);
-            let subStr = this.sdp.substr(begin, end - begin);
-            this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
-          }
-        }
-        if (event.candidate.sdpMid == "video") {
-          let begin = this.sdp.indexOf("m=video");
-          if (begin > 0) {
-            let end = this.sdp.indexOf("\r\n", begin);
-            let subStr = this.sdp.substr(begin, end - begin);
-            this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
-          }
-        }
-      }
-    },
-    onIceGatheringStateChange () {
-      console.log('onIceGatheringStateChange:' + this.connection.iceGatheringState);
-      if (this.connection.iceGatheringState == "complete") {
-        console.log('onIceGatheringStateChange: complete\n' + this.sdp.length);
-
-        var peerObj = new Object();
-        peerObj.peer_id = parseInt(this.peer_id);
-        peerObj.remote_peer_id = this.sub_servers;
-        peerObj.device_id = this.device_id
-        peerObj.type = this.createPeer_type;
-        peerObj.sdp = this.sdp;
-        var peerJson = JSON.stringify(peerObj);
-        console.log(peerObj)
-        websocket.send(peerJson);
-        console.log(this.connection)
-      }
-    },
-    onIceConnectionStateChange () {
-      if (this.connection.iceConnectionState == "completed") {
-        console.log("ok")
       }
     },
     logError (err) {
