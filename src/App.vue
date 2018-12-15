@@ -92,4 +92,13 @@ html, body, #app {
 .left .expand-list-box .list svg {
   fill: white;
 }
+.video-box {
+  video {
+    width: calc(100% - 10px);
+    height: 100%;
+    position: absolute;
+    left: 5px;
+    top: 0;
+  }
+}
 </style>

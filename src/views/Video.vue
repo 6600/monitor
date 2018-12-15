@@ -32,19 +32,6 @@ function logError(err) {
 	console.err(err);
 }
 
-function addNewVideoElement() {
-  var video = document.createElement('video');
-  video.autoplay = true;
-  var video_view = document.getElementById("app")
-  console.log(video_view)
-  video_view.appendChild(video);
-  
-  //var text = document.createTextNode(text_info);
-    //video_view.appendChild(text);
-    
-  return video
-}
-
 export default {
   name: 'about',
   components: {
@@ -62,10 +49,9 @@ export default {
       ],
       connection: null,
       client_status: 0,
-      active_peer_id: null,
-      device_id: null,
       peer_id: null,
-      sub_servers: null
+      sub_servers: null,
+      videoIndex: 0
     }
   },
   methods: {
@@ -99,16 +85,10 @@ export default {
     },
     createPeer (peer_id, device_id) {
       peer_id = parseInt(peer_id)
-      this.device_id = device_id
-      if(this.checkVideoList(peer_id) !== -1){
-        this.videoList[this.checkVideoList(peer_id)].peer_con.device_id = device_id
-      }
-      else{
-        var peer_con = new this.PeerConnection(this);
-        peer_con.device_id = device_id
-        console.log(peer_id)
-        this.addVideoList(peer_id, peer_con)
-      }
+      var peer_con = new this.PeerConnection(this);
+      peer_con.device_id = device_id
+      console.log(peer_id)
+      this.addVideoList(peer_id, peer_con)
     },
     setRemoteSDPLest (sdp) {
       var desc = new Object();
@@ -151,36 +131,45 @@ export default {
       console.err(err)
     },
     addVideo (videoInfo, subInfo) {
-      // console.log(videoInfo)
+      console.log(videoInfo)
       this.createPeer(subInfo, videoInfo.device_id)
     },
     // 启动摄像头进程
     initSubServer (peer_id) {
-      // 如果活跃ID和传入的peer_id不同 那么不向后端发出
-      if (this.active_peer_id !== peer_id) {
-        // 更新active_peer_id
-        this.active_peer_id = peer_id
-        console.log('发送140 和 104')
-        console.log('Init sub server');
-        var peerObj = new Object();
-        peerObj.peer_id = parseInt(peer_id);
-        peerObj.remote_peer_id = parseInt(this.sub_servers);
-        peerObj.type = 140;
-        var peerJson = JSON.stringify(peerObj);
-        console.log('发送140')
-        console.log(peerObj)
-        websocket.send(peerJson);
+      console.log('发送140 和 104')
+      console.log('Init sub server');
+      var peerObj = new Object();
+      peerObj.peer_id = parseInt(peer_id);
+      peerObj.remote_peer_id = parseInt(this.sub_servers);
+      peerObj.type = 140;
+      var peerJson = JSON.stringify(peerObj);
+      console.log('发送140')
+      console.log(peerObj)
+      websocket.send(peerJson);
+      
+      
+      var ptzObj = new Object();
+      ptzObj.peer_id = parseInt(peer_id);
+      ptzObj.remote_peer_id = parseInt(this.sub_servers);
+      ptzObj.type = 100;
+      console.log('发送100')
+      console.log(ptzObj)
+      var ptzCreate = JSON.stringify(ptzObj); 
+      websocket.send(ptzCreate);
+    },
+    addNewVideoElement() {
+      // 找寻没有被占用的窗口
+      var video = document.createElement('video');
+      video.autoplay = true;
+      var video_view = document.getElementById('video-' + this.videoIndex)
+      this.videoIndex++
+      console.log(video_view)
+      video_view.appendChild(video);
+      
+      //var text = document.createTextNode(text_info);
+        //video_view.appendChild(text);
         
-        
-        var ptzObj = new Object();
-        ptzObj.peer_id = parseInt(peer_id);
-        ptzObj.remote_peer_id = parseInt(this.sub_servers);
-        ptzObj.type = 100;
-        console.log('发送100')
-        console.log(ptzObj)
-        var ptzCreate = JSON.stringify(ptzObj); 
-        websocket.send(ptzCreate);
-      }
+      return video
     },
     PeerConnection(vueData) {
       this.device_id = null;
@@ -188,8 +177,6 @@ export default {
       this.createPeer_type = 150
 
       this.view_map = new Map();
-      
-      //this.view = addNewVideoElement("local");
       
       this.connection = new RTCPeerConnection({
         iceServers: [{
@@ -200,7 +187,7 @@ export default {
       })
       
       this.connection.onaddstream = (e) => {
-        var view = addNewVideoElement(e.stream.id);
+        var view = vueData.addNewVideoElement();
         view.srcObject = e.stream;
         this.view_map.set(e.stream.id, view);
         
@@ -224,10 +211,6 @@ export default {
       this.connection.onicegatheringstatechange = () => {
         this.onIceGatheringStateChange(this.connection);
       };
-      
-      this.connection.oniceconnectionstatechange = () => {
-        // this.onIceConnectionStateChange(this.connection);
-      };
         
       
       this.setRemoteSDP = function(sdp) {
@@ -243,8 +226,7 @@ export default {
         this.connection.setLocalDescription(desc);
         this.sdp = desc.sdp;
         
-        if(this.client_status == 1)
-        {
+        if(this.client_status == 1) {
           var peerObj = new Object();
           peerObj.peer_id = parseInt(peer_id);
           peerObj.remote_peer_id = parseInt(this.sub_servers);
@@ -296,7 +278,7 @@ export default {
           var peerObj = new Object();
           peerObj.peer_id =  parseInt(vueData.peer_id);
           peerObj.remote_peer_id = vueData.sub_servers
-          peerObj.device_id = vueData.device_id;
+          peerObj.device_id = this.device_id;
           peerObj.type = this.createPeer_type;
           peerObj.sdp = this.sdp;
           // console.log(vueData)
@@ -320,6 +302,7 @@ export default {
     })
     // 监听列表消息
     Order.$on(`message-10`, (data) => {
+      // 104返回了指定子服务下的摄像头列表
       data.sub_servers.forEach(element => {
         // 注册remote----
         this.sub_servers = parseInt(element)
@@ -337,8 +320,6 @@ export default {
         this.initSubServer(this.peer_id)
       })
       
-      // this.subList = data.sub_servers
-      // console.log(newVideoList)
     })
 
     Order.$on(`message-150`, (data) => {
@@ -403,10 +384,9 @@ export default {
 }
 .content {
   margin: 20px;
-  margin-top: 50px;
   padding: 10px;
   background-color: white;
-  height: calc(100% - 90px);
+  height: calc(100% - 60px);
 }
 .right {
   position: relative;
@@ -419,10 +399,10 @@ export default {
 }
 .split-box {
   display: flex;
-  position: absolute;
+  position: fixed;
   font-size: 30px;
-  right: 10px;
-  top: 10px;
+  right: 180px;
+  top: 15px;
   .icon {
     cursor: pointer;
     color: lightslategray;

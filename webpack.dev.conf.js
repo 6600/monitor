@@ -1,0 +1,5 @@
+{
+  devServer:{
+    inline: false
+  }
+}
