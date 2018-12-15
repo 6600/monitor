@@ -15,7 +15,7 @@
         <div class="split-button icon" @click="changeVideoSplit(16)">&#xe709;</div>
       </div>
       <div class="content">
-        <VideoBox v-for="(item, index) in videoList" class="video-box" :style="getVideoBox()" :title="item.title" @delete="deleteVideo(index)" :key="index"></VideoBox>
+        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :title="item.title" @delete="deleteVideo(index)" :key="index"></VideoBox>
       </div>
     </div>
   </div>
@@ -79,10 +79,10 @@ export default {
           }
         ]
       },
+      active_peer_id: null,
       device_id: null,
       peer_id: null,
-      sub_servers: null,
-      peerconnection_map: new Map()
+      sub_servers: null
     }
   },
   methods: {
@@ -117,14 +117,14 @@ export default {
     createPeer (peer_id, device_id) {
       peer_id = parseInt(peer_id)
       this.device_id = device_id
-      if(this.peerconnection_map.has(peer_id)){
-        this.peerconnection_map.get(peer_id).createPeer(peer_id, device_id);
+      if(this.checkVideoList(peer_id) !== -1){
+        this.videoList[this.checkVideoList(peer_id)].peer_con.createPeer(peer_id, device_id)
       }
       else{
         var peer_con = new this.PeerConnection(this);
         peer_con.createPeer(peer_id, device_id);
         console.log(peer_id)
-        this.peerconnection_map.set(peer_id, peer_con);
+        this.addVideoList(peer_id, peer_con)
       }
     },
     setRemoteSDPLest (sdp) {
@@ -134,13 +134,34 @@ export default {
       console.log(desc)
       this.connection.setRemoteDescription(desc);
     },
+    // 检查监控列表是否包含
+    checkVideoList (peerId) {
+      const videoList = this.videoList
+      for(let key in videoList) {
+        if (videoList[key].peerId && videoList[key].peerId === parseInt(peerId)) {
+          return key
+        }
+      }
+      return -1
+    },
+    addVideoList (peerId, peer_con) {
+      const videoList = this.videoList
+      for(let key in videoList) {
+        if (!videoList[key].peerId) {
+          videoList[key].peerId = peerId
+          videoList[key].peer_con = peer_con
+          return key
+        }
+      }
+      return -1
+    },
     setRemoteSDP (peerId, sdp) {
       console.log('setRemoteSDP: remote sdp id:' + peerId + "sdp:" + sdp.length);
-      if (this.peerconnection_map.has(parseInt(peerId))) {
-        this.peerconnection_map.get(parseInt(peerId)).setRemoteSDP(sdp);
+      if (this.checkVideoList(peerId) !== -1) {
+        this.videoList[this.checkVideoList(peerId)].peer_con.setRemoteSDP(sdp);
       }
       else {
-        console.log('setRemoteSDP failed, no user:' + peerId + ", peer map size:" + this.peerconnection_map.size);
+        console.log('setRemoteSDP failed, no user:' + peerId)
       }
     },
     logError (err) {
@@ -149,31 +170,36 @@ export default {
     addVideo (videoInfo, subInfo) {
       // console.log(videoInfo)
       // this.sub_servers = subInfo
-      // this.initSubServer()
       this.createPeer_type = 150;
       this.createPeer(subInfo, videoInfo.device_id)
     },
+    // 启动摄像头进程
     initSubServer (peer_id) {
-      console.log('发送140 和 104')
-      console.log('Init sub server');
-      var peerObj = new Object();
-      peerObj.peer_id = parseInt(peer_id);
-      peerObj.remote_peer_id = parseInt(this.sub_servers);
-      peerObj.type = 140;
-      var peerJson = JSON.stringify(peerObj);
-      console.log('发送140')
-      console.log(peerObj)
-      websocket.send(peerJson);
-      
-      
-      var ptzObj = new Object();
-      ptzObj.peer_id = parseInt(peer_id);
-      ptzObj.remote_peer_id = parseInt(this.sub_servers);
-      ptzObj.type = 100;
-      console.log('发送100')
-      console.log(ptzObj)
-      var ptzCreate = JSON.stringify(ptzObj); 
-      websocket.send(ptzCreate);
+      // 如果活跃ID和传入的peer_id不同 那么不向后端发出
+      if (this.active_peer_id !== peer_id) {
+        // 更新active_peer_id
+        this.active_peer_id = peer_id
+        console.log('发送140 和 104')
+        console.log('Init sub server');
+        var peerObj = new Object();
+        peerObj.peer_id = parseInt(peer_id);
+        peerObj.remote_peer_id = parseInt(this.sub_servers);
+        peerObj.type = 140;
+        var peerJson = JSON.stringify(peerObj);
+        console.log('发送140')
+        console.log(peerObj)
+        websocket.send(peerJson);
+        
+        
+        var ptzObj = new Object();
+        ptzObj.peer_id = parseInt(peer_id);
+        ptzObj.remote_peer_id = parseInt(this.sub_servers);
+        ptzObj.type = 100;
+        console.log('发送100')
+        console.log(ptzObj)
+        var ptzCreate = JSON.stringify(ptzObj); 
+        websocket.send(ptzCreate);
+      }
     },
     PeerConnection(vueData) {
       this.device_id = null;
