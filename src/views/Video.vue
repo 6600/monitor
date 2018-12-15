@@ -27,13 +27,6 @@ import VideoBox from '../components/VideoBox'
 import { Order, websocket } from '@/Order.js'
 
 /* eslint-disable */
-var ICEConfiguration = {
-  iceServers: [{
-    urls: "turn:rtcmediaserver.top:3478",
-    username: "ipctest", 
-    credential: "ipctest"
-  }]
-};
 
 function logError(err) {
 	console.err(err);
@@ -68,17 +61,7 @@ export default {
         {title: "视频4"},
       ],
       connection: null,
-      createPeer_type: 150,
       client_status: 0,
-      ICEConfiguration: {
-        iceServers: [
-          {
-            urls: "turn:rtcmediaserver.top:3478",
-            username: "ipctest", 
-            credential: "ipctest"
-          }
-        ]
-      },
       active_peer_id: null,
       device_id: null,
       peer_id: null,
@@ -118,11 +101,11 @@ export default {
       peer_id = parseInt(peer_id)
       this.device_id = device_id
       if(this.checkVideoList(peer_id) !== -1){
-        this.videoList[this.checkVideoList(peer_id)].peer_con.createPeer(peer_id, device_id)
+        this.videoList[this.checkVideoList(peer_id)].peer_con.device_id = device_id
       }
       else{
         var peer_con = new this.PeerConnection(this);
-        peer_con.createPeer(peer_id, device_id);
+        peer_con.device_id = device_id
         console.log(peer_id)
         this.addVideoList(peer_id, peer_con)
       }
@@ -169,8 +152,6 @@ export default {
     },
     addVideo (videoInfo, subInfo) {
       // console.log(videoInfo)
-      // this.sub_servers = subInfo
-      this.createPeer_type = 150;
       this.createPeer(subInfo, videoInfo.device_id)
     },
     // 启动摄像头进程
@@ -204,64 +185,50 @@ export default {
     PeerConnection(vueData) {
       this.device_id = null;
       this.sdp = null;
-      
+      this.createPeer_type = 150
+
       this.view_map = new Map();
       
       //this.view = addNewVideoElement("local");
       
-      this.connection = null;
+      this.connection = new RTCPeerConnection({
+        iceServers: [{
+          urls: "turn:rtcmediaserver.top:3478",
+          username: "ipctest", 
+          credential: "ipctest"
+        }]
+      })
       
-      this.createPeer = function(peer_id, device_id) {
-        this.device_id = device_id;
-
-        console.log('createPeer: add stream peer\n');
-        this.createPeerInternal();
+      this.connection.onaddstream = (e) => {
+        var view = addNewVideoElement(e.stream.id);
+        view.srcObject = e.stream;
+        this.view_map.set(e.stream.id, view);
+        
+        console.log('onaddstream stream id:' + e.stream.id + '\n' );
       };
       
-      this.createPeerInternal = function() {
-        console.log('createPeerInternal\n');
-        if(this.connection == null){
-          this.connection = new RTCPeerConnection(ICEConfiguration);
+      this.connection.onremovestream = (e) => {
+        console.log('onremovestream stream id: ' + e.stream.id );
+        if(this.view_map.has(e.stream.id))
+        {
+          video_view.removeChild(this.view_map.get(e.stream.id));
+          this.view_map.delete(e.stream.id);
+          console.log('onremovestream stream id: ' + e.stream.id + ' removed');
         }
-        
-        this.connection.onaddstream = (e) => {
-          var view = addNewVideoElement(e.stream.id);
-          view.srcObject = e.stream;
-          this.view_map.set(e.stream.id, view);
-          
-          console.log('onaddstream stream id:' + e.stream.id + '\n' );
-        };
-        
-        this.connection.onremovestream = (e) => {
-          console.log('onremovestream stream id: ' + e.stream.id );
-          if(this.view_map.has(e.stream.id))
-          {
-            video_view.removeChild(this.view_map.get(e.stream.id));
-            this.view_map.delete(e.stream.id);
-            console.log('onremovestream stream id: ' + e.stream.id + ' removed');
-          }
-        };
-        
-        this.connection.onicecandidate = (event) => {
-            this.onIceCandidate(this.connection, event);
-          };
-          
-          this.connection.onicegatheringstatechange = () => {
-            this.onIceGatheringStateChange(this.connection);
-          };
-          
-          this.connection.oniceconnectionstatechange = () => {
-            this.onIceConnectionStateChange(this.connection);
-          };
-          
-        console.log('createOffer\n');
-          var onSuccess = this.onSuccess.bind(this);
-        this.connection.createOffer({
-            offerToReceiveAudio: 1,
-            offerToReceiveVideo: 1
-          })
-          .then(onSuccess, logError);
       };
+      
+      this.connection.onicecandidate = (event) => {
+        this.onIceCandidate(this.connection, event);
+      };
+        
+      this.connection.onicegatheringstatechange = () => {
+        this.onIceGatheringStateChange(this.connection);
+      };
+      
+      this.connection.oniceconnectionstatechange = () => {
+        // this.onIceConnectionStateChange(this.connection);
+      };
+        
       
       this.setRemoteSDP = function(sdp) {
       
@@ -290,6 +257,15 @@ export default {
         this.client_status = 1;// connected
       };
 
+      console.log('createOffer\n');
+      var onSuccess = this.onSuccess.bind(this);
+      // 设置视频比率
+      this.connection.createOffer({
+          offerToReceiveAudio: 1,
+          offerToReceiveVideo: 1
+        })
+        .then(onSuccess, logError);
+      
       this.onIceCandidate = function(connection, event) {
         //console.log('onIceCandidate:\n' , event.candidate);
         if (event.candidate) {
@@ -321,19 +297,12 @@ export default {
           peerObj.peer_id =  parseInt(vueData.peer_id);
           peerObj.remote_peer_id = vueData.sub_servers
           peerObj.device_id = vueData.device_id;
-          peerObj.type = vueData.createPeer_type;
+          peerObj.type = this.createPeer_type;
           peerObj.sdp = this.sdp;
-          console.log(vueData)
-          console.log(peerObj)
+          // console.log(vueData)
+          // console.log(peerObj)
           var peerJson = JSON.stringify(peerObj); 
           websocket.send(peerJson);
-        }
-      };
-      
-      this.onIceConnectionStateChange = function(connection) {
-        console.log('onIceConnectionStateChange: \n' + connection.iceConnectionState);
-        
-        if(connection.iceConnectionState == "completed"){
         }
       }
     }
