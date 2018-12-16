@@ -11,11 +11,11 @@
         <div class="login">
           <div class="username">
             <span class="icon">&#xe600;</span>
-            <input placeholder="请输入用户名" type="text">
+            <input placeholder="请输入用户名" v-model="username" type="text">
           </div>
           <div class="password">
             <span class="icon">&#xe6e2;</span>
-            <input placeholder="请输入密码" type="text">
+            <input placeholder="请输入密码" v-model="password" type="password">
           </div>
           <div class="save-user-name">
             <CheckBox class="check" v-model="saveUserName" :size="12"/>
@@ -33,6 +33,8 @@
 // import HelloWorld from '@/components/HelloWorld.vue'
 import WaterRipple from 'waterripple'
 import CheckBox from '@puge/checkbox'
+import axios from 'axios'
+// import { websocket } from '@/Order.js'
 export default {
   name: 'home',
   components: {
@@ -42,13 +44,29 @@ export default {
   },
   data () {
     return {
+      username: "",
+      password: "",
       saveUserName: false
     }
   },
   methods: {
     login () {
       console.log('点击了！')
-      this.$router.push('about')
+      if (this.username !== "" && this.password !== "") {
+        axios.post('http://127.0.0.1:3000/login', {
+          username: this.username,
+          password: this.password
+        }).then((response) => {
+          const data = response.data
+          // 用户名密码正确跳转到目录
+          if (data.err === 0) {
+            this.$router.push('video')
+          }
+          console.log(response);
+        })
+      } else {
+        alert('账户名或者密码不能为空!')
+      }
     }
   }
 }
@@ -130,7 +148,7 @@ export default {
   input {
     border: none;
     width: calc(100% - 40px);
-    height: 36px;
+    height: 35px;
   }
 }
 </style>

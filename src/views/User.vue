@@ -30,14 +30,14 @@
               <td class="check-td">
                 <CheckBox class="check" v-model="item.isCheck" borderColor="#a3a4a6" :size="12"></CheckBox>
               </td>
-              <td>{{item.id}}</td>
-              <td>{{item.name}}</td>
+              <td>{{item.sid}}</td>
+              <td>{{item.username}}</td>
               <td>{{item.state}}</td>
               <td>{{item.state}}</td>
             </tr>
           </table>
         </div>
-        <div class="page-box">
+        <div class="page-box" v-if="tableData.length > 10">
           <div class="page-box-left">
             共13条,每页
             <input type="text" value="10"/>
@@ -68,6 +68,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import CheckBox from '@puge/checkbox'
 import Paging from '../components/Paging'
 export default {
@@ -103,6 +104,11 @@ export default {
       isCheckAll: false,
       shouAddBox: false
     }
+  },
+  created () {
+    axios.get('http://127.0.0.1:3000/getUserList').then((res) => {
+      this.tableData = res.data
+    })
   },
   methods: {
     pageChange () {

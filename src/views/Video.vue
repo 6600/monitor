@@ -28,10 +28,6 @@ import { Order, websocket } from '@/Order.js'
 
 /* eslint-disable */
 
-function logError(err) {
-	console.err(err);
-}
-
 export default {
   name: 'about',
   components: {
@@ -229,7 +225,7 @@ export default {
           peerObj.type = this.createPeer_type;
           peerObj.sdp = this.sdp;
           var peerJson = JSON.stringify(peerObj); 
-          websocket.send(peerJson);
+          websocket.send(peerJson)
         }
         this.client_status = 1;// connected
       };
@@ -241,7 +237,7 @@ export default {
           offerToReceiveAudio: 1,
           offerToReceiveVideo: 1
         })
-        .then(onSuccess, logError);
+        .then(onSuccess, vueData.logError);
       
       this.onIceCandidate = function(connection, event) {
         //console.log('onIceCandidate:\n' , event.candidate);
