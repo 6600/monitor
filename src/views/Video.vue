@@ -2,7 +2,7 @@
   <div class="video-page">
     <div class="left">
       <ExpandList v-for="(item, index) in subList" :title="index + ''" :key="index">
-        <div class="video-item" v-for="video in item" :key="video.device_id" @click="addVideo(video, index)">
+        <div class="video-item" v-for="video in item" :key="video.device_id" @click="createPeer(index, video.device_id)">
           <div class="icon">&#xe68f;</div>
           <div class="text">{{video.device_name}}</div>
         </div>
@@ -130,14 +130,8 @@ export default {
     logError (err) {
       console.err(err)
     },
-    addVideo (videoInfo, subInfo) {
-      console.log(videoInfo)
-      this.createPeer(subInfo, videoInfo.device_id)
-    },
     // 启动摄像头进程
     initSubServer (peer_id) {
-      console.log('发送140 和 104')
-      console.log('Init sub server');
       var peerObj = new Object();
       peerObj.peer_id = parseInt(peer_id);
       peerObj.remote_peer_id = parseInt(this.sub_servers);
@@ -218,6 +212,7 @@ export default {
         var desc = new Object(); 
         desc.type = 'answer';
         desc.sdp = sdp;
+        console.log(this.connection)
         this.connection.setRemoteDescription(desc);
       };
       
@@ -323,8 +318,13 @@ export default {
     })
 
     Order.$on(`message-150`, (data) => {
-      console.log('150消息:', data)
-      this.setRemoteSDP(data.peer_id, data.sdp)
+      console.log('message-150:', data)
+      if (this.checkVideoList(data.peer_id) !== -1) {
+        this.videoList[this.checkVideoList(data.peer_id)].peer_con.setRemoteSDP(data.sdp);
+      }
+      else {
+        console.log('setRemoteSDP failed, no user:' + data.peer_id)
+      }
     })
   },
   mounted () {
