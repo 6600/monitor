@@ -15,7 +15,7 @@
       <div class="content">
         <div class="content-bar">
           <div class="add-user button" @click="shouAddBox = true">添加用户</div>
-          <div class="delete-user button">删除用户</div>
+          <div class="delete-user button" @click="deleteUser">删除用户</div>
         </div>
         <div class="table-box">
           <table border="0" cellspacing=0>
@@ -23,7 +23,6 @@
               <th class="check-th"><CheckBox class="check" borderColor="#a3a4a6" v-model="isCheckAll" :size="12"></CheckBox></th>
               <th class="number-th">编号</th>
               <th>用户名称</th>
-              <th>设备ip</th>
               <th>最后登录时间</th>
             </tr>
             <tr v-for="(item, ind) in tableData" :key="ind">
@@ -32,8 +31,7 @@
               </td>
               <td>{{item.sid}}</td>
               <td>{{item.username}}</td>
-              <td>{{item.state}}</td>
-              <td>{{item.state}}</td>
+              <td>{{getLoginTime(item.logintime)}}</td>
             </tr>
           </table>
         </div>
@@ -52,11 +50,11 @@
         <div class="title">添加</div>
         <div class="input-box">
           <div class="text">用户名:</div>
-          <input type="text"/>
+          <input type="text" v-model="addUserName"/>
         </div>
         <div class="input-box">
           <div class="text">密码:</div>
-          <input type="text"/>
+          <input type="text" v-model="addUserPassword"/>
         </div>
         <div class="button-box">
           <div class="button cancel" @click="shouAddBox = false">取消</div>
@@ -71,6 +69,8 @@
 import axios from 'axios'
 import CheckBox from '@puge/checkbox'
 import Paging from '../components/Paging'
+const dayjs = require('dayjs')
+
 export default {
   name: 'about',
   components: {
@@ -79,28 +79,9 @@ export default {
   },
   data () {
     return {
-      tableData: [
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" },
-        { isCheck: false, id: 1, name: "测试", state: "在线" }
-      ],
+      addUserName: "",
+      addUserPassword: "",
+      tableData: [],
       isCheckAll: false,
       shouAddBox: false
     }
@@ -114,10 +95,40 @@ export default {
     pageChange () {
 
     },
+    getLoginTime (logintime) {
+      if (logintime) {
+        return dayjs(parseInt(logintime)).format('YYYY-M-DD h:mm:ss')
+      }
+    },
+    deleteUser () {
+      let deleteUserList = []
+      for (let item in this.tableData) {
+        const value = this.tableData[item]
+        if (value.isCheck) {
+          deleteUserList.push(value.sid)
+        }
+      }
+      console.log(deleteUserList)
+      axios.post('http://127.0.0.1:3000/deleteUser', deleteUserList)
+    },
     // 添加新用户
     addNewUser () {
       console.log('添加新用户!')
-      this.shouAddBox = false
+      axios.post('http://127.0.0.1:3000/addUser', {
+        username: this.addUserName,
+        password: this.addUserPassword
+      }).then((response) => {
+        if (response.data.err === 0) {
+          this.shouAddBox = false
+          alert('用户添加成功!')
+          axios.get('http://127.0.0.1:3000/getUserList').then((res) => {
+            this.tableData = res.data
+          })
+        } else {
+          alert('用户添加失败!')
+        }
+      })
+      // this.shouAddBox = false
     }
   }
 }
