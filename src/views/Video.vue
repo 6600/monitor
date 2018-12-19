@@ -15,7 +15,7 @@
         <div class="split-button icon" @click="changeVideoSplit(16)">&#xe709;</div>
       </div>
       <div class="content">
-        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :title="item.title" @delete="deleteVideo(index, item)" :key="index"></VideoBox>
+        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :video="item" :srcObject="item.srcObject" @delete="deleteVideo(index, item)" :key="index"></VideoBox>
       </div>
     </div>
   </div>
@@ -82,14 +82,14 @@ export default {
       } 
       return t.replace(/\b(0+)/gi,""); 
     },
-    // createPeer_type 150播放 151 停止
+    // orderType 150播放 151 停止
     // 创建视频监控
     // regionID: 区域ID
     // device_id: 驱动ID
-    createPeer (regionID, device_id, createPeer_type) {
+    createPeer (regionID, device_id, orderType) {
       regionID = parseInt(regionID)
       // 创建一个摄像头实例
-      let monitor = new this.PeerConnection(this, createPeer_type);
+      let monitor = new this.PeerConnection(this, orderType, device_id)
       monitor.device_id = device_id
       // console.log(regionID)
       this.addVideoList(regionID, monitor)
@@ -139,27 +139,9 @@ export default {
       var ptzCreate = JSON.stringify(ptzObj); 
       websocket.send(ptzCreate);
     },
-    addNewVideoElement() {
-      // 找寻没有被占用的窗口
-      var video = document.createElement('video');
-      video.autoplay = true;
-      var video_view = document.getElementById('video-' + this.videoIndex)
-      this.videoIndex++
-      console.log(video_view)
-      video_view.appendChild(video);
-      
-      //var text = document.createTextNode(text_info);
-        //video_view.appendChild(text);
-        
-      return video
-    },
     // 创建摄像头实例
-
-    PeerConnection(vueData, createPeer_type) {
-      this.device_id = null;
+    PeerConnection(vueData, orderType, device_id) {
       this.sdp = null
-
-      this.view_map = new Map();
       
       // RTC实例
       this.connection = new RTCPeerConnection({
@@ -171,10 +153,9 @@ export default {
       })
       
       this.connection.onaddstream = (e) => {
-        var view = vueData.addNewVideoElement();
-        view.srcObject = e.stream;
-        this.view_map.set(e.stream.id, view);
-        
+        // var view = vueData.addNewVideoElement();
+        vueData.videoList[0].srcObject = e.stream
+        vueData.$forceUpdate()
         console.log('onaddstream stream id:' + e.stream.id + '\n' );
       };
       
@@ -209,8 +190,8 @@ export default {
           var peerObj = new Object();
           peerObj.peer_id =  parseInt(vueData.peer_id);
           peerObj.remote_peer_id = vueData.sub_servers
-          peerObj.device_id = this.device_id;
-          peerObj.type = createPeer_type;
+          peerObj.device_id = device_id;
+          peerObj.type = orderType
           peerObj.sdp = this.sdp;
           // console.log(vueData)
           // console.log(peerObj)
@@ -240,7 +221,7 @@ export default {
           peerObj.peer_id = parseInt(peer_id);
           peerObj.remote_peer_id = parseInt(this.sub_servers);
           peerObj.device_id = device_id;
-          peerObj.type = createPeer_type;
+          peerObj.type = orderType
           peerObj.sdp = this.sdp;
           var peerJson = JSON.stringify(peerObj);
           console.log('发送数据:', peerJson)
@@ -310,7 +291,6 @@ export default {
         console.log('remove video')
         let video_view = document.getElementById('video-' + this.videoIndex)
         console.log(video_view)
-        // video_view.removeChild(this.view_map.get(e.stream.id));
       }
       else {
         console.log('setRemoteSDP failed, no user:' + data.peer_id)

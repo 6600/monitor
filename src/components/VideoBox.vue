@@ -1,19 +1,20 @@
 <template>
   <div class="video" :class="{'is-enlarge': isEnlarge}">
-    <div class="title" v-show="title">
-      <div class="text">{{title}}</div>
+    <div class="title" v-show="video.title">
+      <div class="text">{{video.title}}</div>
       <div class="tool">
         <div class="icon enlarge" @click="isEnlarge = !isEnlarge">&#xe963;</div>
         <div class="icon delete" @click='$emit("delete")'>&#xe647;</div>
       </div>
     </div>
     <div class="screen"></div>
-    <div class="control" v-show="title">
+    <div class="control" v-show="video.title">
       <div class="up icon">&#xe684;</div>
       <div class="down icon">&#xe629;</div>
       <div class="left icon">&#xe62f;</div>
       <div class="right icon">&#xe62e;</div>
     </div>
+    <video autoplay="true"></video>
   </div>
 </template>
 
@@ -27,7 +28,17 @@ export default {
     }
   },
   props: {
-    title: String
+    video: null,
+    srcObject: null
+  },
+  watch: {
+    srcObject: {
+      handler: function (val) {
+        console.log(this.$el.childNodes[3])
+        this.$el.childNodes[3].srcObject = val
+      },
+      deep: true
+    }
   }
 }
 </script>
