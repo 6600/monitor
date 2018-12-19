@@ -109,7 +109,15 @@ export default {
         }
       }
       console.log(deleteUserList)
-      axios.post('http://127.0.0.1:3000/deleteUser', deleteUserList)
+      axios.post('http://127.0.0.1:3000/deleteUser', deleteUserList).then((res) => {
+        console.log(res.data)
+        if (res.data.err === 0) {
+          axios.get('http://127.0.0.1:3000/getUserList').then((res) => {
+            this.tableData = res.data
+          })
+          alert('删除用户成功!')
+        }
+      })
     },
     // 添加新用户
     addNewUser () {
