@@ -33,8 +33,8 @@
 // import HelloWorld from '@/components/HelloWorld.vue'
 import WaterRipple from 'waterripple'
 import CheckBox from '@puge/checkbox'
-import axios from 'axios'
-// import { websocket } from '@/Order.js'
+// import axios from 'axios'
+import { Order, websocket } from '@/Order.js'
 export default {
   name: 'home',
   components: {
@@ -49,21 +49,24 @@ export default {
       saveUserName: false
     }
   },
+  created () {
+    // 监听密码验证消息
+    Order.$on(`message-0`, (data) => {
+      if (data.err === 0) {
+        this.$router.push('video')
+        // 销毁监听
+        Order.$off(`message-0`)
+      }
+    })
+  },
   methods: {
     login () {
-      console.log('点击了！')
       if (this.username !== "" && this.password !== "") {
-        axios.post('http://127.0.0.1:3000/login', {
+        websocket.send(JSON.stringify({
+          type: 0,
           username: this.username,
           password: this.password
-        }).then((response) => {
-          const data = response.data
-          // 用户名密码正确跳转到目录
-          if (data.err === 0) {
-            this.$router.push('video')
-          }
-          console.log(response);
-        })
+        }))
       } else {
         alert('账户名或者密码不能为空!')
       }

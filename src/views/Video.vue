@@ -236,6 +236,13 @@ export default {
       
     }
   },
+  beforeDestroy () {
+    // 销毁监听
+    Order.$off(`message-104`)
+    Order.$off(`message-10`)
+    Order.$off(`message-150`)
+    Order.$off(`message-151`)
+  },
   created () {
     let index = 0
     let copySubList = {}
@@ -266,7 +273,6 @@ export default {
         websocket.send(peerJson)
         this.initSubServer(this.peer_id)
       })
-      
     })
 
     Order.$on(`message-150`, (data) => {

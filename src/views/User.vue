@@ -66,10 +66,10 @@
 </template>
 
 <script>
-import axios from 'axios'
 import CheckBox from '@puge/checkbox'
 import Paging from '../components/Paging'
 const dayjs = require('dayjs')
+import { Order, websocket } from '@/Order.js'
 
 export default {
   name: 'about',
@@ -87,9 +87,37 @@ export default {
     }
   },
   created () {
-    axios.get('http://127.0.0.1:3000/getUserList').then((res) => {
-      this.tableData = res.data
+    // 监听密码验证消息
+    Order.$on(`message-1`, (res) => {
+      if (res.err === 0) {
+        this.tableData = res.data
+      }
     })
+    Order.$on(`message-2`, (res) => {
+      if (res.err === 0) {
+        this.shouAddBox = false
+        websocket.send(JSON.stringify({
+          type: 1
+        }))
+      }
+    })
+    // 接收添加用户消息
+    Order.$on(`message-3`, (res) => {
+      if (res.err === 0) {
+        this.shouAddBox = false
+        websocket.send(JSON.stringify({
+          type: 1
+        }))
+      }
+    })
+    // 请求用户列表
+    websocket.send(JSON.stringify({
+      type: 1
+    }))
+  },
+  beforeDestroy () {
+    Order.$off(`message-1`)
+    Order.$off(`message-2`)
   },
   methods: {
     pageChange () {
@@ -109,33 +137,21 @@ export default {
         }
       }
       console.log(deleteUserList)
-      axios.post('http://127.0.0.1:3000/deleteUser', deleteUserList).then((res) => {
-        console.log(res.data)
-        if (res.data.err === 0) {
-          axios.get('http://127.0.0.1:3000/getUserList').then((res) => {
-            this.tableData = res.data
-          })
-          alert('删除用户成功!')
-        }
-      })
+      // 删除用户
+      websocket.send(JSON.stringify({
+        type: 2,
+        data: deleteUserList
+      }))
     },
     // 添加新用户
     addNewUser () {
       console.log('添加新用户!')
-      axios.post('http://127.0.0.1:3000/addUser', {
+      websocket.send(JSON.stringify({
+        type: 3,
         username: this.addUserName,
-        password: this.addUserPassword
-      }).then((response) => {
-        if (response.data.err === 0) {
-          this.shouAddBox = false
-          alert('用户添加成功!')
-          axios.get('http://127.0.0.1:3000/getUserList').then((res) => {
-            this.tableData = res.data
-          })
-        } else {
-          alert('用户添加失败!')
-        }
-      })
+        password: this.addUserPassword,
+        usertype: "user"
+      }))
       // this.shouAddBox = false
     }
   }
