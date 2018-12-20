@@ -34,8 +34,10 @@ export default {
   watch: {
     srcObject: {
       handler: function (val) {
+        console.log('------------------------')
         console.log(this.$el.childNodes[3])
         this.$el.childNodes[3].srcObject = val
+        console.log(this.$el.childNodes[3].srcObject)
       },
       deep: true
     }

@@ -66,14 +66,13 @@ export default {
       this.videoList = newList
     },
     deleteVideo (index, item) {
+      this.createPeer(item.peerId, item.peer_con.device_id, 151)
       let copyData = this.videoList
       copyData[index] = {}
       console.log(index)
       this.videoList = []
       this.videoList = copyData
       console.log('stop IPC')
-      console.log(item.peer_con.device_id)
-      this.createPeer(item.peerId, item.peer_con.device_id, 151)
     },
     randomNum (n) { 
       var t=''; 
@@ -87,18 +86,24 @@ export default {
     // regionID: 区域ID
     // device_id: 驱动ID
     createPeer (regionID, device_id, orderType) {
-      regionID = parseInt(regionID)
-      // 创建一个摄像头实例
-      let monitor = new this.PeerConnection(this, orderType, device_id)
-      monitor.device_id = device_id
-      // console.log(regionID)
-      this.addVideoList(regionID, monitor)
+      if (orderType === 150) {
+        regionID = parseInt(regionID)
+        // 创建一个摄像头实例
+        let monitor = new this.PeerConnection(this, orderType, device_id)
+        monitor.device_id = device_id
+        // console.log(regionID)
+        this.addVideoList(regionID, monitor)
+      } else {
+        // this.videoList[this.checkVideoList(device_id)].orderType = 151
+        this.videoList[this.checkVideoList(device_id)].peer_con.connection.close()
+      }
+      
     },
     // 检查监控列表是否包含
-    checkVideoList (peerId) {
+    checkVideoList (device_id) {
       const videoList = this.videoList
       for(let key in videoList) {
-        if (videoList[key].peerId && videoList[key].peerId === parseInt(peerId)) {
+        if (videoList[key].peer_con.device_id && videoList[key].peer_con.device_id === parseInt(device_id)) {
           return key
         }
       }
@@ -142,7 +147,7 @@ export default {
     // 创建摄像头实例
     PeerConnection(vueData, orderType, device_id) {
       this.sdp = null
-      
+      this.orderType = orderType
       // RTC实例
       this.connection = new RTCPeerConnection({
         iceServers: [{
@@ -154,7 +159,7 @@ export default {
       
       this.connection.onaddstream = (e) => {
         // var view = vueData.addNewVideoElement();
-        vueData.videoList[0].srcObject = e.stream
+        vueData.videoList[vueData.checkVideoList(device_id)].srcObject = e.stream
         vueData.$forceUpdate()
         console.log('onaddstream stream id:' + e.stream.id + '\n' );
       };
@@ -191,24 +196,14 @@ export default {
           peerObj.peer_id =  parseInt(vueData.peer_id);
           peerObj.remote_peer_id = vueData.sub_servers
           peerObj.device_id = device_id;
-          peerObj.type = orderType
+          peerObj.type = this.orderType
           peerObj.sdp = this.sdp;
           // console.log(vueData)
           // console.log(peerObj)
           var peerJson = JSON.stringify(peerObj);
-          console.log('发送数据:', peerJson)
+          // console.log('发送数据:', peerJson)
           websocket.send(peerJson);
         }
-      };
-        
-      
-      this.setRemoteSDP = function(sdp) {
-      
-        var desc = new Object(); 
-        desc.type = 'answer';
-        desc.sdp = sdp;
-        // console.log(this.connection)
-        this.connection.setRemoteDescription(desc)
       };
       
       this.onSuccess = function(desc) {
@@ -221,7 +216,7 @@ export default {
           peerObj.peer_id = parseInt(peer_id);
           peerObj.remote_peer_id = parseInt(this.sub_servers);
           peerObj.device_id = device_id;
-          peerObj.type = orderType
+          peerObj.type = this.orderType
           peerObj.sdp = this.sdp;
           var peerJson = JSON.stringify(peerObj);
           console.log('发送数据:', peerJson)
@@ -275,8 +270,12 @@ export default {
     })
 
     Order.$on(`message-150`, (data) => {
-      if (this.checkVideoList(data.peer_id) !== -1) {
-        this.videoList[this.checkVideoList(data.peer_id)].peer_con.setRemoteSDP(data.sdp);
+      console.log(this.checkVideoList(data.device_id))
+      if (this.checkVideoList(data.device_id) !== -1) {
+        this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
+          type: 'answer',
+          sdp: data.sdp
+        })
       }
       else {
         console.log('setRemoteSDP failed, no user:' + data.peer_id)
@@ -285,12 +284,14 @@ export default {
 
     // 关闭监控器
     Order.$on(`message-151`, (data) => {
-      if (this.checkVideoList(data.peer_id) !== -1) {
-        this.videoList[this.checkVideoList(data.peer_id)].peer_con.setRemoteSDP(data.sdp);
+      if (this.checkVideoList(data.device_id) !== -1) {
+        this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
+          type: 'answer',
+          sdp: data.sdp
+        })
         // 移除元素
         console.log('remove video')
-        let video_view = document.getElementById('video-' + this.videoIndex)
-        console.log(video_view)
+        this.videoList[this.checkVideoList(data.device_id)] = {}
       }
       else {
         console.log('setRemoteSDP failed, no user:' + data.peer_id)
