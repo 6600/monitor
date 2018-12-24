@@ -261,11 +261,11 @@ export default {
         // 注册remote----
         this.sub_servers = parseInt(element)
         copySubList[element + ""] = []
-        var peerObj = new Object();
-        peerObj.peer_id = parseInt(data.peer_id);
-        peerObj.remote_peer_id = parseInt(element);
-        peerObj.type = 104;
-        var peerJson = JSON.stringify(peerObj)
+        const peerJson = JSON.stringify({
+          peer_id: parseInt(data.peer_id),
+          remote_peer_id: parseInt(element),
+          type: 104
+        })
         // console.log(copySubList)
         index ++
         console.log('发送')
@@ -307,15 +307,13 @@ export default {
   mounted () {
     // 获取区域列表
     this.peer_id = this.randomNum(6);
-	
-    var peerObj = new Object();
-    peerObj.peer_id = parseInt(this.peer_id);
-    peerObj.role = 21;
-    peerObj.type = 10;
     console.log(peerObj)
-    var peerJson = JSON.stringify(peerObj); 
-    websocket.send(peerJson);
-    
+    const peerJson = JSON.stringify({
+      role: 21,
+      type: 10,
+      peer_id: parseInt(this.peer_id)
+    })
+    websocket.send(peerJson)
   }
 }
 </script>

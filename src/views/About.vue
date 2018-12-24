@@ -18,7 +18,7 @@
         </router-link>
       </div>
       <div class="user" @click="showMenu = !showMenu">
-        <img class="user-img" src="https://cdn4.buysellads.net/uu/1/3386/1525189909-61450.png">
+        <img class="user-img" src="../assets/user.png">
         <div class="hello">hello,</div>
         <div class="user-name">admin</div>
         <div class="drop-down icon">&#xe626;</div>
@@ -111,9 +111,9 @@ export default {
   display: flex;
   cursor: pointer;
   .user-img {
-    width: 46px;
-    height: 46px;
-    margin: 7px 0;
+    width: 35px;
+    height: 35px;
+    margin: 13px 0;
   }
   .hello {
     margin: 0 5px;

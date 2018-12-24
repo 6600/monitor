@@ -1,7 +1,7 @@
 <template>
   <div class="user-page">
     <div class="left">
-      <div class="menu-item 在线">
+      <div class="menu-item">
         <div class="icon">&#xe603;</div>
         <div class="text">用户信息</div>
       </div>
@@ -87,39 +87,28 @@ export default {
     }
   },
   created () {
-    // 监听密码验证消息
-    Order.$on(`message-1`, (res) => {
-      if (res.err === 0) {
-        this.tableData = res.data
-      }
-    })
-    Order.$on(`message-2`, (res) => {
-      if (res.err === 0) {
-        this.shouAddBox = false
-        websocket.send(JSON.stringify({
-          type: 1
-        }))
-      }
-    })
-    // 接收添加用户消息
-    Order.$on(`message-3`, (res) => {
-      if (res.err === 0) {
-        this.shouAddBox = false
-        websocket.send(JSON.stringify({
-          type: 1
-        }))
-      }
-    })
-    // 请求用户列表
-    websocket.send(JSON.stringify({
-      type: 1
-    }))
+    console.log("开始监听!")
+    
+    this.reload()
+    
   },
   beforeDestroy () {
-    Order.$off(`message-1`)
-    Order.$off(`message-2`)
+    console.log("取消监听!")
+    // Order.$off()
   },
   methods: {
+    reload () {
+      // 监听密码验证消息
+      Order.$once(`message-1`, (res) => {
+        if (res.err === 0) {
+          this.tableData = res.data
+        }
+      })
+      // 请求用户列表
+      websocket.send(JSON.stringify({
+        type: 1
+      }))
+    },
     pageChange () {
 
     },
@@ -137,6 +126,13 @@ export default {
         }
       }
       console.log(deleteUserList)
+      Order.$once(`message-2`, (res) => {
+        if (res.err === 0) {
+          this.shouAddBox = false
+          this.reload()
+        }
+      })
+
       // 删除用户
       websocket.send(JSON.stringify({
         type: 2,
@@ -145,6 +141,13 @@ export default {
     },
     // 添加新用户
     addNewUser () {
+      // 接收添加用户消息
+      Order.$once(`message-3`, (res) => {
+        if (res.err === 0) {
+          this.shouAddBox = false
+          this.reload()
+        }
+      })
       console.log('添加新用户!')
       websocket.send(JSON.stringify({
         type: 3,
@@ -173,6 +176,8 @@ export default {
   height: 50px;
   line-height: 50px;
   color: white;
+  width: 260px;
+  overflow: hidden;
   .icon {
     height: 50px;
     width: 50px;

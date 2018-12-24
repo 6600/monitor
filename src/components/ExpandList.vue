@@ -91,6 +91,9 @@ export default {
     background-color: #ffffff;
     border-bottom: 1px solid #e9e9e9;
     cursor: pointer;
+    position: relative;
+    width: 240px;
+    overflow: hidden;
   }
   .expand-left .icon{
     height: 20px;

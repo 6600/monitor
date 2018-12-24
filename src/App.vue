@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <router-view/>
+    <router-view v-if="loading"/>
   </div>
 </template>
 
@@ -8,9 +8,15 @@
 import { Order, websocket } from '@/Order.js'
 
 export default {
+  data () {
+    return {
+      loading: false
+    }
+  },
   created () {
 
     websocket.onopen = () => {
+      this.loading = true
       console.log("打开!")
       // onOpen(evt)
     }
@@ -19,7 +25,7 @@ export default {
     // }
     websocket.onmessage = (evt) => {
       const data = JSON.parse(evt.data)
-      console.log('收到消息:', data)
+      console.log(`message-${data.type}:`, data)
       Order.$emit(`message-${data.type}`, data)
     }
     // websocket.onerror = function(evt) { 
