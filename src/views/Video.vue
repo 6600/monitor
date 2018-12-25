@@ -66,6 +66,33 @@ export default {
       this.videoList = newList
     },
     deleteVideo (index, item) {
+      console.log('删除屏幕:', item)
+      // 关闭监控器
+      Order.$once(`message-151`, (data) => {
+        console.log('销毁摄像头实例!')
+        if (this.checkVideoList(data.device_id) !== -1) {
+          this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
+            type: 'answer',
+            sdp: data.sdp
+          })
+          // 移除元素
+          console.log('remove video')
+          this.videoList[this.checkVideoList(data.device_id)] = {}
+        }
+        else {
+          console.log('setRemoteSDP failed, no user:' + data.peer_id)
+        }
+      })
+      // 发送151消除
+      const peerJson = JSON.stringify({
+        peer_id: parseInt(this.peer_id),
+        remote_peer_id: this.sub_servers,
+        device_id: item.peer_con.device_id,
+        type: 151,
+        sdp: this.sdp
+      })
+      // console.log('发送数据:', peerJson)
+      websocket.send(peerJson)
       this.createPeer(item.peerId, item.peer_con.device_id, 151)
       let copyData = this.videoList
       copyData[index] = {}
@@ -87,6 +114,19 @@ export default {
     // device_id: 驱动ID
     createPeer (regionID, device_id, orderType) {
       if (orderType === 150) {
+        console.log('创建摄像头实例!')
+        Order.$on(`message-150`, (data) => {
+          console.log(this.checkVideoList(data.device_id))
+          if (this.checkVideoList(data.device_id) !== -1) {
+            this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
+              type: 'answer',
+              sdp: data.sdp
+            })
+          }
+          else {
+            console.log('setRemoteSDP failed, no user:' + data.peer_id)
+          }
+        })
         regionID = parseInt(regionID)
         // 创建一个摄像头实例
         let monitor = new this.PeerConnection(this, orderType, device_id)
@@ -94,7 +134,6 @@ export default {
         // console.log(regionID)
         this.addVideoList(regionID, monitor)
       } else {
-        // this.videoList[this.checkVideoList(device_id)].orderType = 151
         this.videoList[this.checkVideoList(device_id)].peer_con.connection.close()
       }
       
@@ -196,7 +235,7 @@ export default {
             sdp: this.sdp
           })
           // console.log('发送数据:', peerJson)
-          websocket.send(peerJson);
+          websocket.send(peerJson)
         }
       }
       
@@ -232,26 +271,23 @@ export default {
   },
   beforeDestroy () {
     // 销毁监听
-    Order.$off(`message-104`)
-    Order.$off(`message-10`)
     Order.$off(`message-150`)
-    Order.$off(`message-151`)
   },
   created () {
     let index = 0
     let copySubList = {}
-    // 监听列表项目消息
-    Order.$on(`message-104`, (data) => {
-      index--
-      copySubList[data.peer_id] = data.devices_info
-      if (index === 0) {
-        this.subList = copySubList
-      }
-    })
     // 监听列表消息
-    Order.$on(`message-10`, (data) => {
+    Order.$once(`message-10`, (data) => {
       // 104返回了指定子服务下的摄像头列表
       data.sub_servers.forEach(element => {
+        // 监听列表项目消息
+        Order.$once(`message-104`, (data) => {
+          index--
+          copySubList[data.peer_id] = data.devices_info
+          if (index === 0) {
+            this.subList = copySubList
+          }
+        })
         // 注册remote----
         this.sub_servers = parseInt(element)
         copySubList[element + ""] = []
@@ -268,36 +304,6 @@ export default {
       })
     })
 
-    Order.$on(`message-150`, (data) => {
-      console.log(this.checkVideoList(data.device_id))
-      if (this.checkVideoList(data.device_id) !== -1) {
-        this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
-          type: 'answer',
-          sdp: data.sdp
-        })
-      }
-      else {
-        console.log('setRemoteSDP failed, no user:' + data.peer_id)
-      }
-    })
-
-    // 关闭监控器
-    Order.$on(`message-151`, (data) => {
-      if (this.checkVideoList(data.device_id) !== -1) {
-        this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
-          type: 'answer',
-          sdp: data.sdp
-        })
-        // 移除元素
-        console.log('remove video')
-        this.videoList[this.checkVideoList(data.device_id)] = {}
-      }
-      else {
-        console.log('setRemoteSDP failed, no user:' + data.peer_id)
-      }
-    })
-  },
-  mounted () {
     // 获取区域列表
     this.peer_id = this.randomNum(6);
     const peerJson = JSON.stringify({
