@@ -2,7 +2,7 @@
   <div class="video-page">
     <div class="left">
       <ExpandList v-for="(item, index) in subList" :title="index + ''" :key="index">
-        <div class="video-item" v-for="video in item" :key="video.device_id" @click="createPeer(index, video.device_id, 150)">
+        <div class="video-item" v-for="video in item" :key="video.device_id" @click="createPeer(index, video.device_id)">
           <div class="icon">&#xe68f;</div>
           <div class="text">{{video.device_name}}</div>
         </div>
@@ -67,6 +67,9 @@ export default {
     },
     deleteVideo (index, item) {
       console.log('删除屏幕:', item)
+      // 关闭摄像头连接
+      item.peer_con.connection.close()
+
       // 关闭监控器
       Order.$once(`message-151`, (data) => {
         console.log('销毁摄像头实例!')
@@ -78,8 +81,7 @@ export default {
           // 移除元素
           console.log('remove video')
           this.videoList[this.checkVideoList(data.device_id)] = {}
-        }
-        else {
+        } else {
           console.log('setRemoteSDP failed, no user:' + data.peer_id)
         }
       })
@@ -93,7 +95,8 @@ export default {
       })
       // console.log('发送数据:', peerJson)
       websocket.send(peerJson)
-      this.createPeer(item.peerId, item.peer_con.device_id, 151)
+
+      // 前台清除屏幕
       let copyData = this.videoList
       copyData[index] = {}
       console.log(index)
@@ -112,31 +115,26 @@ export default {
     // 创建视频监控
     // regionID: 区域ID
     // device_id: 驱动ID
-    createPeer (regionID, device_id, orderType) {
-      if (orderType === 150) {
-        console.log('创建摄像头实例!')
-        Order.$on(`message-150`, (data) => {
-          console.log(this.checkVideoList(data.device_id))
-          if (this.checkVideoList(data.device_id) !== -1) {
-            this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
-              type: 'answer',
-              sdp: data.sdp
-            })
-          }
-          else {
-            console.log('setRemoteSDP failed, no user:' + data.peer_id)
-          }
-        })
-        regionID = parseInt(regionID)
-        // 创建一个摄像头实例
-        let monitor = new this.PeerConnection(this, orderType, device_id)
-        monitor.device_id = device_id
-        // console.log(regionID)
-        this.addVideoList(regionID, monitor)
-      } else {
-        this.videoList[this.checkVideoList(device_id)].peer_con.connection.close()
-      }
-      
+    createPeer (regionID, device_id) {
+      console.log('创建摄像头实例!')
+      Order.$on(`message-150`, (data) => {
+        console.log(this.checkVideoList(data.device_id))
+        if (this.checkVideoList(data.device_id) !== -1) {
+          this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
+            type: 'answer',
+            sdp: data.sdp
+          })
+        }
+        else {
+          console.log('setRemoteSDP failed, no user:' + data.peer_id)
+        }
+      })
+      regionID = parseInt(regionID)
+      // 创建一个摄像头实例
+      let monitor = new this.PeerConnection(this, device_id)
+      monitor.device_id = device_id
+      // console.log(regionID)
+      this.addVideoList(regionID, monitor)
     },
     // 检查监控列表是否包含
     checkVideoList (device_id) {
@@ -181,9 +179,8 @@ export default {
       websocket.send(ptzCreate)
     },
     // 创建摄像头实例
-    PeerConnection(vueData, orderType, device_id) {
+    PeerConnection(vueData, device_id) {
       this.sdp = null
-      this.orderType = orderType
       // RTC实例
       this.connection = new RTCPeerConnection({
         iceServers: [{
@@ -231,7 +228,7 @@ export default {
             peer_id: parseInt(vueData.peer_id),
             remote_peer_id: vueData.sub_servers,
             device_id,
-            type: this.orderType,
+            type: 150,
             sdp: this.sdp
           })
           // console.log('发送数据:', peerJson)
@@ -249,7 +246,7 @@ export default {
             peer_id: parseInt(peer_id),
             remote_peer_id: parseInt(this.sub_servers),
             device_id,
-            type: this.orderType,
+            type: 150,
             sdp: this.sdp
           })
           console.log('发送数据:', peerJson)
