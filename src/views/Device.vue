@@ -76,7 +76,6 @@
 <script>
 import CheckBox from '@puge/checkbox'
 import Paging from '../components/Paging'
-const dayjs = require('dayjs')
 import { Order, websocket } from '@/Order.js'
 
 export default {
@@ -176,15 +175,6 @@ export default {
         this.shouAddBox = false
         this.reload()
       })
-      console.log(JSON.stringify({
-        type: 102,
-        peer_id: parseInt(this.peer_id),
-        remote_peer_id: this.checkItem,
-        device_ip: this.addDeviceIP,
-        device_name: this.addDeviceName,
-        device_user: this.addDeviceUser,
-        device_pw: this.addDevicePassword,
-      }))
       websocket.send(JSON.stringify({
         type: 102,
         peer_id: parseInt(this.peer_id),

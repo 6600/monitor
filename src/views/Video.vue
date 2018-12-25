@@ -125,24 +125,21 @@ export default {
     },
     // 启动摄像头进程
     initSubServer (peer_id) {
-      var peerObj = new Object();
-      peerObj.peer_id = parseInt(peer_id);
-      peerObj.remote_peer_id = parseInt(this.sub_servers);
-      peerObj.type = 140;
-      var peerJson = JSON.stringify(peerObj);
-      console.log('发送140')
-      console.log(peerObj)
+      const peerJson = JSON.stringify({
+        type: 140,
+        peer_id: parseInt(peer_id),
+        remote_peer_id: parseInt(this.sub_servers)
+      })
+      console.log(peerJson)
       websocket.send(peerJson);
       
-      
-      var ptzObj = new Object();
-      ptzObj.peer_id = parseInt(peer_id);
-      ptzObj.remote_peer_id = parseInt(this.sub_servers);
-      ptzObj.type = 100;
-      console.log('发送100')
-      console.log(ptzObj)
-      var ptzCreate = JSON.stringify(ptzObj); 
-      websocket.send(ptzCreate);
+      const ptzCreate = JSON.stringify({
+        type: 100,
+        peer_id: parseInt(peer_id),
+        remote_peer_id: parseInt(this.sub_servers)
+      })
+      console.log(ptzCreate)
+      websocket.send(ptzCreate)
     },
     // 创建摄像头实例
     PeerConnection(vueData, orderType, device_id) {
@@ -191,20 +188,17 @@ export default {
         console.log('onIceGatheringStateChange:' + connection.iceGatheringState);
         if (connection.iceGatheringState == "complete") {
           console.log('onIceGatheringStateChange: complete\n' + this.sdp.length);
-          
-          var peerObj = new Object();
-          peerObj.peer_id =  parseInt(vueData.peer_id);
-          peerObj.remote_peer_id = vueData.sub_servers
-          peerObj.device_id = device_id;
-          peerObj.type = this.orderType
-          peerObj.sdp = this.sdp;
-          // console.log(vueData)
-          // console.log(peerObj)
-          var peerJson = JSON.stringify(peerObj);
+          const peerJson = JSON.stringify({
+            peer_id: parseInt(vueData.peer_id),
+            remote_peer_id: vueData.sub_servers,
+            device_id,
+            type: this.orderType,
+            sdp: this.sdp
+          })
           // console.log('发送数据:', peerJson)
           websocket.send(peerJson);
         }
-      };
+      }
       
       this.onSuccess = function(desc) {
         console.log('onSuccess sdp:' + desc.sdp.length);
@@ -212,13 +206,13 @@ export default {
         this.sdp = desc.sdp;
         
         if(this.client_status == 1) {
-          var peerObj = new Object();
-          peerObj.peer_id = parseInt(peer_id);
-          peerObj.remote_peer_id = parseInt(this.sub_servers);
-          peerObj.device_id = device_id;
-          peerObj.type = this.orderType
-          peerObj.sdp = this.sdp;
-          var peerJson = JSON.stringify(peerObj);
+          const peerJson = JSON.stringify({
+            peer_id: parseInt(peer_id),
+            remote_peer_id: parseInt(this.sub_servers),
+            device_id,
+            type: this.orderType,
+            sdp: this.sdp
+          })
           console.log('发送数据:', peerJson)
           websocket.send(peerJson)
         }
@@ -269,7 +263,6 @@ export default {
         // console.log(copySubList)
         index ++
         console.log('发送')
-        console.log(peerObj)
         websocket.send(peerJson)
         this.initSubServer(this.peer_id)
       })
@@ -307,7 +300,6 @@ export default {
   mounted () {
     // 获取区域列表
     this.peer_id = this.randomNum(6);
-    console.log(peerObj)
     const peerJson = JSON.stringify({
       role: 21,
       type: 10,

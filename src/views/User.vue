@@ -68,9 +68,9 @@
 <script>
 import CheckBox from '@puge/checkbox'
 import Paging from '../components/Paging'
-const dayjs = require('dayjs')
 import { Order, websocket } from '@/Order.js'
 
+const dayjs = require('dayjs')
 export default {
   name: 'about',
   components: {
