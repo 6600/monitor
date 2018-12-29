@@ -2,7 +2,7 @@
   <div class="video-page">
     <div class="left">
       <ExpandList v-for="(item, index) in subList" :title="index + ''" :key="index">
-        <div class="video-item" v-for="video in item" :key="video.device_id" @click="createPeer(index, video.device_id)">
+        <div class="video-item" v-for="video in item" :key="video.device_id" @click="createPeer(index, video.device_id, video.PTZ)">
           <div class="icon">&#xe68f;</div>
           <div class="text">{{video.device_name}}</div>
         </div>
@@ -15,7 +15,7 @@
         <div class="split-button icon" @click="changeVideoSplit(16)">&#xe709;</div>
       </div>
       <div class="content">
-        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :video="item" :srcObject="item.srcObject" @delete="deleteVideo(index, item)" :key="index"></VideoBox>
+        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :video="item" :peerID="peer_id" :srcObject="item.srcObject" @delete="deleteVideo(index, item)" :key="index"></VideoBox>
       </div>
     </div>
   </div>
@@ -115,7 +115,7 @@ export default {
     // 创建视频监控
     // regionID: 区域ID
     // device_id: 驱动ID
-    createPeer (regionID, device_id) {
+    createPeer (regionID, device_id, PTZ) {
       console.log('创建摄像头实例!')
       Order.$on(`message-150`, (data) => {
         console.log(this.checkVideoList(data.device_id))
@@ -134,7 +134,7 @@ export default {
       let monitor = new this.PeerConnection(this, device_id)
       monitor.device_id = device_id
       // console.log(regionID)
-      this.addVideoList(regionID, monitor)
+      this.addVideoList(regionID, monitor, PTZ)
     },
     // 检查监控列表是否包含
     checkVideoList (device_id) {
@@ -146,11 +146,12 @@ export default {
       }
       return -1
     },
-    addVideoList (peerId, peer_con) {
+    addVideoList (peerId, peer_con, PTZ) {
       const videoList = this.videoList
       for(let key in videoList) {
         if (!videoList[key].peerId) {
           videoList[key].peerId = peerId
+          videoList[key].PTZ = PTZ
           videoList[key].peer_con = peer_con
           return key
         }

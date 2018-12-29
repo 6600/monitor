@@ -8,18 +8,18 @@
       </div>
     </div>
     <div class="screen"></div>
-    <div class="control" v-show="video.title">
-      <div class="up icon">&#xe684;</div>
-      <div class="down icon">&#xe629;</div>
-      <div class="left icon">&#xe62f;</div>
-      <div class="right icon">&#xe62e;</div>
+    <div class="control">
+      <div class="up icon" @mousedown="upStart" @mouseup="mouseUp">&#xe684;</div>
+      <div class="down icon" @mousedown="downStart" @mouseup="mouseUp">&#xe629;</div>
+      <div class="left icon" @mousedown="leftStart" @mouseup="mouseUp">&#xe62f;</div>
+      <div class="right icon" @mousedown="rightStart" @mouseup="mouseUp">&#xe62e;</div>
     </div>
     <video autoplay="true"></video>
   </div>
 </template>
 
 <script>
-
+import { websocket } from '@/Order.js'
 export default {
   name: 'about',
   data () {
@@ -29,7 +29,60 @@ export default {
   },
   props: {
     video: null,
-    srcObject: null
+    srcObject: null,
+    peerID: String
+  },
+  methods: {
+    mouseUp () {
+      const peerJson = JSON.stringify({
+        type: 120,
+        peer_id: parseInt(this.peerID),
+        device_id: this.video.peer_con.device_id,
+        remote_peer_id: this.video.peerId
+      })
+      console.log('控制摄像头停止!', peerJson)
+      websocket.send(peerJson)
+    },
+    upStart () {
+      const peerJson = JSON.stringify({
+        type: 112,
+        peer_id: parseInt(this.peerID),
+        device_id: this.video.peer_con.device_id,
+        remote_peer_id: this.video.peerId
+      })
+      console.log('控制摄像头向上!', peerJson)
+      websocket.send(peerJson)
+    },
+    downStart () {
+      const peerJson = JSON.stringify({
+        type: 113,
+        peer_id: parseInt(this.peerID),
+        device_id: this.video.peer_con.device_id,
+        remote_peer_id: this.video.peerId
+      })
+      console.log('控制摄像头向下!', peerJson)
+      websocket.send(peerJson)
+    },
+    leftStart () {
+      const peerJson = JSON.stringify({
+        type: 114,
+        peer_id: parseInt(this.peerID),
+        device_id: this.video.peer_con.device_id,
+        remote_peer_id: this.video.peerId
+      })
+      console.log('控制摄像头向左!', peerJson)
+      websocket.send(peerJson)
+    },
+    rightStart () {
+      const peerJson = JSON.stringify({
+        type: 115,
+        peer_id: parseInt(this.peerID),
+        device_id: this.video.peer_con.device_id,
+        remote_peer_id: this.video.peerId
+      })
+      console.log('控制摄像头向右!', peerJson)
+      websocket.send(peerJson)
+    }
   },
   watch: {
     srcObject: {
@@ -101,6 +154,7 @@ export default {
   bottom: 5px;
   right: 5px;
   font-size: 20px;
+  z-index: 999;
   .icon {
     width: 25px;
     text-align: center;

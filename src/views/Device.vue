@@ -147,26 +147,17 @@ export default {
       return t.replace(/\b(0+)/gi,""); 
     },
     deleteUser () {
-      let deleteUserList = []
       for (let item in this.tableData) {
         const value = this.tableData[item]
         if (value.isCheck) {
-          deleteUserList.push(value.sid)
+          websocket.send(JSON.stringify({
+            type: 103,
+            peer_id: parseInt(this.peer_id),
+            remote_peer_id: this.checkItem,
+            device_id: value.device_id
+          }))
         }
       }
-      console.log(deleteUserList)
-      Order.$once(`message-2`, (res) => {
-        if (res.err === 0) {
-          this.shouAddBox = false
-          this.reload()
-        }
-      })
-
-      // 删除设备
-      websocket.send(JSON.stringify({
-        type: 2,
-        data: deleteUserList
-      }))
     },
     // 添加新设备
     addNewDevice () {
