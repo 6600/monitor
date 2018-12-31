@@ -1,9 +1,9 @@
 <template>
   <div class="user-page">
     <div class="left">
-      <div class="menu-item">
+      <div class="menu-item" v-for="item in videoList" :key="item">
         <div class="icon">&#xe603;</div>
-        <div class="text" v-for="item in videoList" :key="item">{{item}}</div>
+        <div class="text">{{item}}</div>
       </div>
     </div>
     <div class="right">
