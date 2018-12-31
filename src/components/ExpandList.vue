@@ -50,7 +50,7 @@ export default {
   },
   mounted () {
     // 插件DOM发生改变自动调整大小
-    console.log(this.$el.childNodes)
+    // console.log(this.$el.childNodes)
     const DOM = this.$el.childNodes[1]
     DOM.addEventListener('DOMSubtreeModified', () => {
       if (this.changeing) return

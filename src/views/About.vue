@@ -2,7 +2,7 @@
   <div class="main-page" :class="{'is-shrink': isShrink}">
     <div class="title-bar">
       <div class="left">
-        <div class="title">某某某安防管理系统</div>
+        <div class="title">视频监控汇聚平台</div>
         <div class="shrink icon" @click="isShrink = !isShrink">&#xe604;</div>
         <router-link tag="div" to="video" class="menu-item">
           <div class="icon">&#xe601;</div>
@@ -27,7 +27,7 @@
             <div class="icon">&#xe6e2;</div>
             <div class="menu-item-text">修改密码</div>
           </div>
-          <div class="menu-item">
+          <div class="menu-item" @click="exit">
             <div class="icon">&#xe62c;</div>
             <div class="menu-item-text">退出系统</div>
           </div>
@@ -45,6 +45,11 @@ export default {
     return {
       showMenu: false,
       isShrink: false
+    }
+  },
+  methods: {
+    exit () {
+      this.$router.push('/')
     }
   }
 }
@@ -85,6 +90,7 @@ export default {
   background-color: white;
   height: 0;
   overflow: hidden;
+  z-index: 999;
 }
 .menu.active {
   height: auto;

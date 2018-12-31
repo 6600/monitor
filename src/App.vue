@@ -8,13 +8,13 @@
 import { Order, websocket } from '@/Order.js'
 
 export default {
+  name: "login",
   data () {
     return {
       loading: false
     }
   },
   created () {
-
     websocket.onopen = () => {
       this.loading = true
       console.log("打开!")

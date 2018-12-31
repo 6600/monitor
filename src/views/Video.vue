@@ -270,6 +270,7 @@ export default {
   beforeDestroy () {
     // 销毁监听
     Order.$off(`message-150`)
+    Order.$off(`message-104`)
   },
   created () {
     let index = 0
@@ -279,7 +280,7 @@ export default {
       // 104返回了指定子服务下的摄像头列表
       data.sub_servers.forEach(element => {
         // 监听列表项目消息
-        Order.$once(`message-104`, (data) => {
+        Order.$on(`message-104`, (data) => {
           index--
           copySubList[data.peer_id] = data.devices_info
           if (index === 0) {

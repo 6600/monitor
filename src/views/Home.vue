@@ -4,7 +4,7 @@
       <div class="left">
         <div class="text-box">
           <div class="text title">Welcome</div>
-          <div class="text content">某某某安防管理系统</div>
+          <div class="text content">视频监控汇聚平台</div>
         </div>
       </div>
       <div class="right">

@@ -1,7 +1,7 @@
 <template>
   <div class="user-page">
     <div class="left">
-      <div class="menu-item" v-for="item in videoList" :key="item">
+      <div class="menu-item" v-for="item in videoList" :key="item" @click="changeActive(item)">
         <div class="icon">&#xe603;</div>
         <div class="text">{{item}}</div>
       </div>
@@ -158,6 +158,7 @@ export default {
           }))
         }
       }
+      this.reload()
     },
     // 添加新设备
     addNewDevice () {
@@ -166,6 +167,15 @@ export default {
         this.shouAddBox = false
         this.reload()
       })
+      console.log(JSON.stringify({
+        type: 102,
+        peer_id: parseInt(this.peer_id),
+        remote_peer_id: this.checkItem,
+        device_ip: this.addDeviceIP,
+        device_name: this.addDeviceName,
+        device_user: this.addDeviceUser,
+        device_pw: this.addDevicePassword,
+      }))
       websocket.send(JSON.stringify({
         type: 102,
         peer_id: parseInt(this.peer_id),
@@ -176,6 +186,10 @@ export default {
         device_pw: this.addDevicePassword,
       }))
       // this.shouAddBox = false
+    },
+    changeActive (id) {
+      this.checkItem = id
+      this.reload()
     }
   }
 }
@@ -198,11 +212,15 @@ export default {
   color: white;
   width: 260px;
   overflow: hidden;
+  cursor: pointer;
   .icon {
     height: 50px;
     width: 50px;
     text-align: center;
   }
+}
+.menu-item:hover {
+  background-color: #009fe9;
 }
 
 .right {
