@@ -220,9 +220,11 @@ export default {
   }
 }
 .menu-item:hover {
-  background-color: #009fe9;
+  background-color: #3385ff;
 }
-
+.menu-item:active {
+  background-color: #78a5f1;
+}
 .right {
   width: calc(100% - 260px);
   .title-bar {

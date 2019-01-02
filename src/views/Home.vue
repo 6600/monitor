@@ -18,7 +18,7 @@
             <input placeholder="请输入密码" v-model="password" type="password">
           </div>
           <div class="save-user-name">
-            <CheckBox class="check" v-model="saveUserName" :size="12"/>
+            <CheckBox class="check" :value="saveUserName" @input="saveUser" :margin="2" :size="12"/>
             <span>记住密码</span>
           </div>
           <WaterRipple class="login-button" @onClick="login" text="登陆"></WaterRipple>
@@ -33,6 +33,7 @@
 // import HelloWorld from '@/components/HelloWorld.vue'
 import WaterRipple from 'waterripple'
 import CheckBox from '@puge/checkbox'
+import localforage from 'localforage'
 // import axios from 'axios'
 import { Order, websocket } from '@/Order.js'
 export default {
@@ -50,6 +51,12 @@ export default {
     }
   },
   created () {
+    localforage.getItem('user', (err, value) => {
+      if (err === null) {
+        this.username = value
+        this.saveUserName = true
+      }
+    })
     // 监听密码验证消息
     Order.$on(`message-0`, (data) => {
       if (data.err === 0) {
@@ -67,8 +74,20 @@ export default {
           username: this.username,
           password: this.password
         }))
+        if (this.saveUserName) {
+          localforage.setItem('user', this.username)
+        }
       } else {
         alert('账户名或者密码不能为空!')
+      }
+    },
+    saveUser (save) {
+      this.saveUserName = save
+      // console.log(save)
+      if (save) {
+        localforage.setItem('user', this.username)
+      } else {
+        localforage.setItem('user', '')
       }
     }
   }
@@ -150,8 +169,10 @@ export default {
   }
   input {
     border: none;
-    width: calc(100% - 40px);
+    padding: 0 10px;
+    width: calc(100% - 60px);
     height: 35px;
+    font-size: 16px;
   }
 }
 </style>
