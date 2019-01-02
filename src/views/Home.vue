@@ -19,7 +19,7 @@
           </div>
           <div class="save-user-name">
             <CheckBox class="check" :value="saveUserName" @input="saveUser" :margin="2" :size="12"/>
-            <span>记住密码</span>
+            <span>记住用户名</span>
           </div>
           <WaterRipple class="login-button" @onClick="login" text="登陆"></WaterRipple>
         </div>
@@ -52,7 +52,7 @@ export default {
   },
   created () {
     localforage.getItem('user', (err, value) => {
-      if (err === null) {
+      if (err === null && value !== '') {
         this.username = value
         this.saveUserName = true
       }
