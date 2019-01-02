@@ -67,20 +67,23 @@ export default {
     },
     deleteVideo (index, item) {
       console.log('删除屏幕:', item)
-      // 关闭摄像头连接
-      item.peer_con.connection.close()
+      
 
       // 关闭监控器
       Order.$once(`message-151`, (data) => {
         console.log('销毁摄像头实例!')
-        if (this.checkVideoList(data.device_id) !== -1) {
-          this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
+        console.log(data.device_id)
+        const itemIndex = this.checkVideoList(data.device_id)
+        if (itemIndex !== -1) {
+          console.log(this.videoList[itemIndex].peer_con)
+          this.videoList[itemIndex].peer_con.connection.setRemoteDescription({
             type: 'answer',
             sdp: data.sdp
           })
           // 移除元素
           console.log('remove video')
-          this.videoList[this.checkVideoList(data.device_id)] = {}
+          
+          this.videoList[itemIndex] = {}
         } else {
           console.log('setRemoteSDP failed, no user:' + data.peer_id)
         }
@@ -91,18 +94,13 @@ export default {
         remote_peer_id: this.sub_servers,
         device_id: item.peer_con.device_id,
         type: 151,
-        sdp: this.sdp
+        sdp: item.peer_con.sdp
       })
       // console.log('发送数据:', peerJson)
       websocket.send(peerJson)
 
-      // 前台清除屏幕
-      let copyData = this.videoList
-      copyData[index] = {}
-      console.log(index)
-      this.videoList = []
-      this.videoList = copyData
-      console.log('stop IPC')
+      // 关闭摄像头连接
+      item.peer_con.connection.close()
     },
     randomNum (n) { 
       var t=''; 
@@ -140,8 +138,10 @@ export default {
     checkVideoList (device_id) {
       const videoList = this.videoList
       for(let key in videoList) {
-        if (videoList[key].peer_con.device_id && videoList[key].peer_con.device_id === parseInt(device_id)) {
-          return key
+        if (videoList[key].peer_con) {
+          if (videoList[key].peer_con.device_id && videoList[key].peer_con.device_id === parseInt(device_id)) {
+            return parseInt(key)
+          }
         }
       }
       return -1
@@ -232,7 +232,7 @@ export default {
             type: 150,
             sdp: this.sdp
           })
-          // console.log('发送数据:', peerJson)
+          console.log('发送数据:', peerJson)
           websocket.send(peerJson)
         }
       }
