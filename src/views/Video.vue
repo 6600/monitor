@@ -15,7 +15,7 @@
         <div class="split-button icon" @click="changeVideoSplit(16)">&#xe709;</div>
       </div>
       <div class="content">
-        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :video="item" :peerID="peer_id" :srcObject="item.srcObject" @delete="deleteVideo(index, item)" :key="index"></VideoBox>
+        <VideoBox v-for="(item, index) in videoList" class="video-box" :id="'video-' + index" :style="getVideoBox()" :video="item" :peerID="peer_id" :srcObject="item.srcObject" @delete="IPCStop(index, item)" :key="index"></VideoBox>
       </div>
     </div>
   </div>
@@ -111,6 +111,10 @@ export default {
     IPCPlay (regionID, device_id, PTZ) {
       this.makePeer(regionID, device_id, PTZ, 150)
     },
+    IPCStop (index, video) {
+      console.log(index, video)
+      this.makePeer(video.peer_id, video.device_id, video.PTZ, 151)
+    },
     // 创建视频监控
     // regionID: 区域ID
     // device_id: 驱动ID
@@ -119,7 +123,7 @@ export default {
       if (this.peerconnection[regionID]) {
         this.peerconnection[regionID].createPeer(device_id)
       } else {
-        const peer_con = new this.PeerConnection(this, device_id)
+        const peer_con = new this.PeerConnection(this, device_id, orderType)
         peer_con.createPeer(device_id)
         this.peerconnection[regionID] = peer_con
       }
@@ -132,29 +136,26 @@ export default {
         })
       })
       regionID = parseInt(regionID)
-      // 创建一个摄像头实例
-      let monitor = new this.PeerConnection(this, device_id)
-      monitor.device_id = device_id
       // console.log(regionID)
-      this.addVideoList(regionID, monitor, PTZ)
+      this.addVideoList(regionID, device_id, PTZ)
     },
     // 检查监控列表是否包含
     checkVideoList (device_id) {
       const videoList = this.videoList
       for(let key in videoList) {
-        if (videoList[key].peer_con.device_id && videoList[key].peer_con.device_id === parseInt(device_id)) {
+        if (videoList[key].device_id && videoList[key].device_id === parseInt(device_id)) {
           return key
         }
       }
       return -1
     },
-    addVideoList (peerId, peer_con, PTZ) {
+    addVideoList (peerId, device_id, PTZ) {
       const videoList = this.videoList
       for(let key in videoList) {
         if (!videoList[key].peerId) {
           videoList[key].peerId = peerId
+          videoList[key].device_id = device_id
           videoList[key].PTZ = PTZ
-          videoList[key].peer_con = peer_con
           return key
         }
       }
@@ -182,7 +183,7 @@ export default {
       websocket.send(ptzCreate)
     },
     // 创建摄像头实例
-    PeerConnection(vueData, device_id) {
+    PeerConnection(vueData, device_id, orderType) {
       this.sdp = null
       this.view_map = {}
       
@@ -196,7 +197,7 @@ export default {
             peer_id: parseInt(peer_id),
             remote_peer_id: parseInt(this.sub_servers),
             device_id,
-            type: 150,
+            type: orderType,
             sdp: this.sdp
           })
           console.log('发送数据:', peerJson)
@@ -261,7 +262,7 @@ export default {
               peer_id: parseInt(vueData.peer_id),
               remote_peer_id: vueData.sub_servers,
               device_id,
-              type: 150,
+              type: orderType,
               sdp: this.sdp
             })
             console.log('发送150')
