@@ -125,16 +125,11 @@ export default {
       }
       console.log('创建摄像头实例!')
       Order.$on(`message-150`, (data) => {
-        console.log(this.checkVideoList(data.device_id))
-        if (this.checkVideoList(data.device_id) !== -1) {
-          this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
-            type: 'answer',
-            sdp: data.sdp
-          })
-        }
-        else {
-          console.log('setRemoteSDP failed, no user:' + data.peer_id)
-        }
+        console.log(regionID)
+        this.peerconnection[regionID].connection.setRemoteDescription({
+          type: 'answer',
+          sdp: data.sdp
+        })
       })
       regionID = parseInt(regionID)
       // 创建一个摄像头实例
