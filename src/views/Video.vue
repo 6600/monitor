@@ -2,7 +2,7 @@
   <div class="video-page">
     <div class="left">
       <ExpandList v-for="(item, index) in subList" :title="index + ''" :key="index">
-        <div class="video-item" v-for="video in item" :key="video.device_id" @click="createPeer(index, video.device_id, video.PTZ)">
+        <div class="video-item" v-for="video in item" :key="video.device_id" @click="IPCPlay(index, video.device_id, video.PTZ)">
           <div class="icon">&#xe68f;</div>
           <div class="text">{{video.device_name}}</div>
         </div>
@@ -25,9 +25,7 @@
 import ExpandList from '../components/ExpandList'
 import VideoBox from '../components/VideoBox'
 import { Order, websocket } from '@/Order.js'
-
 /* eslint-disable */
-
 export default {
   name: 'about',
   components: {
@@ -37,6 +35,7 @@ export default {
   data () {
     return {
       subList: {},
+      peerconnection: {},
       videoList: [
         {title: "视频1"},
         {title: "视频2"},
@@ -67,23 +66,19 @@ export default {
     },
     deleteVideo (index, item) {
       console.log('删除屏幕:', item)
-      
-
+      // 关闭摄像头连接
+      // item.peer_con.connection.close()
       // 关闭监控器
       Order.$once(`message-151`, (data) => {
         console.log('销毁摄像头实例!')
-        console.log(data.device_id)
-        const itemIndex = this.checkVideoList(data.device_id)
-        if (itemIndex !== -1) {
-          console.log(this.videoList[itemIndex].peer_con)
-          this.videoList[itemIndex].peer_con.connection.setRemoteDescription({
+        if (this.checkVideoList(data.device_id) !== -1) {
+          this.videoList[this.checkVideoList(data.device_id)].peer_con.connection.setRemoteDescription({
             type: 'answer',
             sdp: data.sdp
           })
           // 移除元素
           console.log('remove video')
-          
-          this.videoList[itemIndex] = {}
+          this.videoList[this.checkVideoList(data.device_id)] = {}
         } else {
           console.log('setRemoteSDP failed, no user:' + data.peer_id)
         }
@@ -94,13 +89,17 @@ export default {
         remote_peer_id: this.sub_servers,
         device_id: item.peer_con.device_id,
         type: 151,
-        sdp: item.peer_con.sdp
+        sdp: this.sdp
       })
       // console.log('发送数据:', peerJson)
       websocket.send(peerJson)
-
-      // 关闭摄像头连接
-      item.peer_con.connection.close()
+      // 前台清除屏幕
+      let copyData = this.videoList
+      copyData[index] = {}
+      console.log(index)
+      this.videoList = []
+      this.videoList = copyData
+      console.log('stop IPC')
     },
     randomNum (n) { 
       var t=''; 
@@ -109,11 +108,21 @@ export default {
       } 
       return t.replace(/\b(0+)/gi,""); 
     },
-    // orderType 150播放 151 停止
+    IPCPlay (regionID, device_id, PTZ) {
+      this.makePeer(regionID, device_id, PTZ, 150)
+    },
     // 创建视频监控
     // regionID: 区域ID
     // device_id: 驱动ID
-    createPeer (regionID, device_id, PTZ) {
+    // orderType 150播放 151 停止
+    makePeer (regionID, device_id, PTZ, orderType) {
+      if (this.peerconnection[regionID]) {
+        this.peerconnection[regionID].createPeer(device_id)
+      } else {
+        const peer_con = new this.PeerConnection(this, device_id)
+        peer_con.createPeer(device_id)
+        this.peerconnection[regionID] = peer_con
+      }
       console.log('创建摄像头实例!')
       Order.$on(`message-150`, (data) => {
         console.log(this.checkVideoList(data.device_id))
@@ -138,10 +147,8 @@ export default {
     checkVideoList (device_id) {
       const videoList = this.videoList
       for(let key in videoList) {
-        if (videoList[key].peer_con) {
-          if (videoList[key].peer_con.device_id && videoList[key].peer_con.device_id === parseInt(device_id)) {
-            return parseInt(key)
-          }
+        if (videoList[key].peer_con.device_id && videoList[key].peer_con.device_id === parseInt(device_id)) {
+          return key
         }
       }
       return -1
@@ -182,60 +189,7 @@ export default {
     // 创建摄像头实例
     PeerConnection(vueData, device_id) {
       this.sdp = null
-      // RTC实例
-      this.connection = new RTCPeerConnection({
-        iceServers: [{
-          urls: "turn:rtcmediaserver.top:3478",
-          username: "ipctest", 
-          credential: "ipctest"
-        }]
-      })
-      
-      this.connection.onaddstream = (e) => {
-        // var view = vueData.addNewVideoElement();
-        vueData.videoList[vueData.checkVideoList(device_id)].srcObject = e.stream
-        vueData.$forceUpdate()
-        console.log('onaddstream stream id:' + e.stream.id + '\n' );
-      };
-      
-      this.connection.onicecandidate = (event) => {
-        //console.log('onIceCandidate:\n' , event.candidate);
-        if (event.candidate) {
-          if(event.candidate.sdpMid == "audio") {
-            var begin = this.sdp.indexOf("m=audio");
-            if(begin > 0) {
-              var end = this.sdp.indexOf("\r\n", begin);
-              var subStr = this.sdp.substr(begin, end - begin);
-              this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
-            }
-          }
-          if(event.candidate.sdpMid == "video") {
-            var begin = this.sdp.indexOf("m=video");
-            if(begin > 0) {
-              var end = this.sdp.indexOf("\r\n", begin);
-              var subStr = this.sdp.substr(begin, end - begin);
-              this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
-            }
-          }
-        }
-      };
-        
-      this.connection.onicegatheringstatechange = () => {
-        const connection = this.connection
-        console.log('onIceGatheringStateChange:' + connection.iceGatheringState);
-        if (connection.iceGatheringState == "complete") {
-          console.log('onIceGatheringStateChange: complete\n' + this.sdp.length);
-          const peerJson = JSON.stringify({
-            peer_id: parseInt(vueData.peer_id),
-            remote_peer_id: vueData.sub_servers,
-            device_id,
-            type: 150,
-            sdp: this.sdp
-          })
-          console.log('发送数据:', peerJson)
-          websocket.send(peerJson)
-        }
-      }
+      this.view_map = {}
       
       this.onSuccess = function(desc) {
         console.log('onSuccess sdp:' + desc.sdp.length);
@@ -254,18 +208,85 @@ export default {
           websocket.send(peerJson)
         }
         this.client_status = 1;// connected
-      };
+      }
 
-      console.log('createOffer\n');
-      var onSuccess = this.onSuccess.bind(this);
-      // 设置视频比率
-      this.connection.createOffer({
+      this.createPeer = function(device_id) {
+        this.device_id = device_id
+
+        console.log('createPeer: add stream peer\n')
+        this.createPeerInternal()
+      }
+      this.createPeerInternal = function() {
+        console.log('createPeerInternal\n')
+        // 判断RTC实例是否存在
+        if (this.connection == null) {
+          this.connection = new RTCPeerConnection({
+            iceServers: [{
+              urls: "turn:rtcmediaserver.top:3478",
+              username: "ipctest", 
+              credential: "ipctest"
+            }]
+          })
+        }
+
+        this.connection.onaddstream = (e) => {
+          // var view = vueData.addNewVideoElement();
+          vueData.videoList[vueData.checkVideoList(device_id)].srcObject = e.stream
+          vueData.$forceUpdate()
+          console.log('onaddstream stream id:' + e.stream.id + '\n' );
+        }
+
+        this.connection.onicecandidate = (event) => {
+          if (event.candidate) {
+            if(event.candidate.sdpMid == "audio") {
+              var begin = this.sdp.indexOf("m=audio");
+              if(begin > 0) {
+                var end = this.sdp.indexOf("\r\n", begin);
+                var subStr = this.sdp.substr(begin, end - begin);
+                this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
+              }
+            }
+            if(event.candidate.sdpMid == "video") {
+              var begin = this.sdp.indexOf("m=video");
+              if(begin > 0) {
+                var end = this.sdp.indexOf("\r\n", begin);
+                var subStr = this.sdp.substr(begin, end - begin);
+                this.sdp = this.sdp.replace(subStr, subStr + "\r\na=candidate:" + event.candidate.candidate);
+              }
+            }
+          }
+        }
+
+        this.connection.onicegatheringstatechange = () => {
+          const connection = this.connection
+          console.log('onIceGatheringStateChange:' + connection.iceGatheringState);
+          if (connection.iceGatheringState == "complete") {
+            console.log('onIceGatheringStateChange: complete\n' + this.sdp.length);
+            const peerJson = JSON.stringify({
+              peer_id: parseInt(vueData.peer_id),
+              remote_peer_id: vueData.sub_servers,
+              device_id,
+              type: 150,
+              sdp: this.sdp
+            })
+            console.log('发送150')
+            // console.log('发送数据:', peerJson)
+            websocket.send(peerJson)
+          }
+        }
+
+        console.log('createOffer\n');
+        var onSuccess = this.onSuccess.bind(this)
+        // 设置视频比率
+        this.connection.createOffer({
           offerToReceiveAudio: 1,
           offerToReceiveVideo: 1
-        })
-        .then(onSuccess, vueData.logError);
-      
+        }).then(onSuccess, vueData.logError)
+      }
     }
+  },
+  logError (err) {
+	  console.err(err)
   },
   beforeDestroy () {
     // 销毁监听
@@ -302,7 +323,6 @@ export default {
         this.initSubServer(this.peer_id)
       })
     })
-
     // 获取区域列表
     this.peer_id = this.randomNum(6);
     const peerJson = JSON.stringify({
@@ -381,4 +401,3 @@ export default {
   }
 }
 </style>
-
